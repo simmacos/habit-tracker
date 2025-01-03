@@ -1,11 +1,42 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Habit Tracker</title>
+    <link rel="stylesheet" href="rsc/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-leaf"></i>
+            <span>Habit Tracker</span>
+        </div>
+        <div class="nav-auth">
+            <button id="loginBtn" class="login-btn">
+                <i class="fab fa-google"></i>
+                Login with Google
+            </button>
+            <div id="userProfile" class="user-profile hidden">
+                <div class="profile-dropdown">
+                    <div class="profile-trigger">
+                        <img id="userImg" src="" alt="Profile">
+                        <span id="userName"></span>
+                    </div>
+                    <div class="dropdown-menu">
+                        <button id="logoutBtn" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
     
+
+    <script src="rsc/js/app.js"></script>
 </body>
 </html>

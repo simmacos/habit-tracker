@@ -15,7 +15,7 @@ public class Test {
     @Autowired
     private TestHabitRepository repository;
 
-    @GetMapping("/all")
+    @GetMapping("/api/public")
     public List<TestHabit> tutti() {
         List<TestHabit> habits = repository.findAll();
         System.out.println("Trovati " + habits.size() + " habits");
