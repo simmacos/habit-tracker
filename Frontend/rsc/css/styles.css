@@ -16,6 +16,7 @@ body {
     background-color: var(--ivory);
 }
 
+/* Navbar Styles - Existing */
 .navbar {
     background-color: var(--noir);
     padding: 1rem 2rem;
@@ -69,27 +70,318 @@ body {
     border: 2px solid var(--moss);
 }
 
-.hidden {
+/* Container and Section Styles - New */
+.container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.section {
+    margin-bottom: 2rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--sage);
+}
+
+.section-title {
+    color: var(--noir);
+    font-size: 1.25rem;
+    font-weight: 500;
+}
+
+.add-btn {
+    background: none;
+    border: none;
+    color: var(--moss);
+    font-size: 1.5rem;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.add-btn:hover {
+    background-color: var(--sage);
+    color: var(--noir);
+}
+
+/* Habit Cards */
+.habit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.habit-card {
+    background: var(--sage);
+    padding: 1rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: transform 0.2s ease;
+}
+
+.habit-card:hover {
+    transform: translateX(4px);
+}
+
+.habit-checkbox {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--moss);
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+}
+
+.habit-checkbox:checked {
+    background-color: var(--moss);
+}
+
+.habit-checkbox:checked::after {
+    content: '✓';
+    position: absolute;
+    color: var(--ivory);
+    font-size: 14px;
+    left: 3px;
+    top: -1px;
+}
+
+.habit-content {
+    flex-grow: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.habit-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.habit-title {
+    font-weight: 500;
+    color: var(--noir);
+}
+
+.habit-meta {
+    font-size: 0.85rem;
+    color: var(--moss);
+}
+
+.habit-streak {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--moss);
+    font-size: 0.9rem;
+}
+
+/* Modal Styles */
+.modal {
     display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
 }
 
-/* Responsive Design */
-@media (max-width: 600px) {
-    .navbar {
-        padding: 1rem;
-    }
-
-    .nav-brand span {
-        font-size: 1rem;
-    }
-
-    .login-btn {
-        padding: 0.4rem 0.8rem;
-        font-size: 0.9rem;
-    }
+.modal.active {
+    display: flex;
+    opacity: 1;
+    visibility: visible;
 }
 
-/* Per il dropdown logout */
+.modal-content {
+    background-color: var(--ivory);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.modal.active .modal-content {
+    transform: translateY(0);
+}
+
+.modal-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--sage);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-body {
+    padding: 1rem;
+}
+
+.modal-footer {
+    padding: 1rem;
+    border-top: 1px solid var(--sage);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--noir);
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--noir);
+    font-weight: 500;
+}
+
+input[type="text"], textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--sage);
+    border-radius: 8px;
+    background-color: white;
+    color: var(--noir);
+}
+
+/* Weekdays Selection */
+.weekdays {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+}
+
+.day-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--sage);
+    background: none;
+    cursor: pointer;
+    color: var(--noir);
+    transition: all 0.3s ease;
+}
+
+.day-btn.active {
+    background-color: var(--moss);
+    border-color: var(--moss);
+    color: var(--ivory);
+}
+
+/* Toggle Switch */
+.toggle-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.toggle-wrapper {
+    position: relative;
+    width: 50px;
+    height: 24px;
+}
+
+.toggle-wrapper input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--sage);
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: var(--moss);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+/* Modal Buttons */
+.cancel-btn, .save-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn {
+    background-color: var(--sage);
+    color: var(--noir);
+}
+
+.save-btn {
+    background-color: var(--moss);
+    color: var(--ivory);
+}
+
+.cancel-btn:hover {
+    background-color: #b1b2a8;
+}
+
+.save-btn:hover {
+    background-color: #4a4f2f;
+}
+
+/* Existing Profile Dropdown Styles */
 .profile-dropdown {
     position: relative;
     display: inline-block;
@@ -146,7 +438,151 @@ body {
     background-color: var(--sage);
 }
 
+.hidden {
+    display: none;
+}
+
+/* Modal Content Styling */
+.markdown-content {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    color: var(--noir);
+    padding: 1.5rem;
+    border-radius: 8px;
+    background-color: var(--sage);
+    margin: 1rem 0;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+    color: var(--noir);
+    margin: 1.5rem 0 1rem 0;
+    font-weight: 600;
+}
+
+.markdown-content h1 { font-size: 1.8rem; }
+.markdown-content h2 { font-size: 1.5rem; }
+.markdown-content h3 { font-size: 1.2rem; }
+
+.markdown-content p {
+    margin: 1rem 0;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+    padding-left: 1.5rem;
+    margin: 1rem 0;
+}
+
+.markdown-content li {
+    margin: 0.5rem 0;
+}
+
+.markdown-content code {
+    font-family: 'Consolas', 'Monaco', monospace;
+    background-color: var(--ivory);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.markdown-content pre {
+    background-color: var(--ivory);
+    padding: 1rem;
+    border-radius: 6px;
+    margin: 1rem 0;
+    overflow-x: auto;
+}
+
+.markdown-content pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+/* Modal Buttons */
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.btn-primary {
+    background-color: var(--moss);
+    color: var(--ivory);
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #4a4f2f;
+}
+
+.btn-subtle {
+    background-color: var(--sage);
+    color: var(--noir);
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-subtle:hover {
+    background-color: #b1b2a8;
+}
+
+/* Edit Mode Styling */
+#editMode {
+    margin-top: 1.5rem;
+}
+
+#editMode .form-group {
+    margin-bottom: 1.5rem;
+}
+
+#editDescription {
+    font-family: 'Consolas', 'Monaco', monospace;
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid var(--sage);
+    border-radius: 8px;
+    background-color: var(--ivory);
+    color: var(--noir);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+
+/* Responsive Design */
 @media (max-width: 600px) {
+    .navbar {
+        padding: 1rem;
+    }
+
+    .nav-brand span {
+        font-size: 1rem;
+    }
+
+    .login-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+    }
+
+    .container {
+        padding: 0.5rem;
+    }
+
+    .habit-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
     .dropdown-menu {
         position: fixed;
         top: auto;
@@ -165,31 +601,22 @@ body {
         padding: 1rem;
         justify-content: center;
     }
-}
 
-@media (max-width: 600px) {
-    .dropdown-menu {
-        position: fixed;
-        top: auto;
-        bottom: 0;
-        left: 0;
-        right: 0;
+    .modal-content {
         width: 100%;
-        border-radius: 12px 12px 0 0;
-        background-color: var(--ivory);
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-        padding: 1rem;
-        transform: translateY(100%);
-        transition: transform 0.3s ease;
+        height: 100%;
+        max-height: 100vh;
+        border-radius: 0;
     }
 
-    .profile-dropdown.active .dropdown-menu {
-        transform: translateY(0);
+    .weekdays {
+        flex-wrap: wrap;
+        gap: 0.75rem;
     }
 
-    .dropdown-item {
-        padding: 1rem;
-        justify-content: center;
-        font-size: 1.1rem;
+    .day-btn {
+        flex: 1;
+        min-width: 40px;
     }
 }
+
