@@ -133,35 +133,22 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('http://localhost:8080/api/habits?includeHobbies=true', {
             credentials: 'include'
         })
-        .then(res => {
-            if (!res.ok) throw new Error('Network response was not ok');
-            // Log della risposta grezza
-            return res.text().then(text => {
-                console.log('Raw response:', text);
-                try {
-                    return JSON.parse(text);
-                } catch (e) {
-                    console.error('JSON parse error:', e);
-                    console.log('Problematic response:', text);
-                    throw e;
-                }
-            });
-        })
+        .then(res => res.json())
         .then(habits => {
-            console.log('Parsed habits:', habits);
+            const today = new Date().getDay(); // 0-6 (Sunday-Saturday)
             
-            if (!Array.isArray(habits)) {
-                console.error('Expected array of habits, received:', habits);
-                return;
-            }
+            // Filtra gli habits per mostrare solo quelli schedulati per oggi e gli hobby
+            const filteredHabits = habits.filter(habit => 
+                habit.isHobby || habit.schedule[today] === '1'
+            );
     
-            const regularHabits = habits.filter(h => !h.isHobby);
-            const hobbies = habits.filter(h => h.isHobby);
+            const regularHabits = filteredHabits.filter(h => !h.isHobby);
+            const hobbies = filteredHabits.filter(h => h.isHobby);
     
             // Render regular habits
             habitsList.innerHTML = regularHabits.length > 0 
                 ? regularHabits.map(habit => createHabitCard(habit)).join('')
-                : '<div class="no-habits">No habits added yet</div>';
+                : '<div class="no-habits">No habits scheduled for today</div>';
     
             // Only show hobbies section if there are hobbies
             if (hobbies.length > 0) {
@@ -177,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error loading habits:', err);
             habitsList.innerHTML = '<div class="error">Error loading habits</div>';
         });
-    }    
+    }
 
     function showUserProfile(user) {
         loginBtn.classList.add('hidden');
@@ -224,13 +211,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }    
 
     function getScheduleDisplay(schedule) {
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const activeDays = schedule.split('').map((active, index) => 
-            active === '1' ? days[index] : null
-        ).filter(day => day !== null);
+        if (!schedule) return '';
         
-        return activeDays.length === 7 ? 'Daily' : activeDays.join(', ');
-    }
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const activeDays = schedule.split('')
+            .map((active, index) => active === '1' ? days[index] : null)
+            .filter(Boolean); // Questo rimuove tutti i valori null/undefined/false
+        
+        if (activeDays.length === 7) return 'Daily';
+        if (activeDays.length === 0) return 'No days selected';
+        return activeDays.join(', ');
+    }    
+    
 
     function openModal() {
         modal.classList.add('active');
