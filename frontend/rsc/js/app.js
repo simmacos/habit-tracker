@@ -20,13 +20,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const hobbiesSection = document.getElementById('hobbiesSection');
 
     const isMobile = window.innerWidth <= 600;
+    const API_BASE_URL = 'https://haby.casacocchy.duckdns.org';
 
     // Check login status on page load
     checkLoginStatus();
 
     // Login button click handler
     loginBtn.addEventListener('click', function() {
-        window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+        window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
     });
 
     // Toggle dropdown with mobile support
@@ -94,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Logout handling
     logoutBtn?.addEventListener('click', function() {
-        fetch('http://localhost:8080/api/auth/logout', {
+        fetch(`${API_BASE_URL}/api/auth/logout`, {
             method: 'POST',
             credentials: 'include'
         })
@@ -105,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function checkLoginStatus() {
-        fetch('http://localhost:8080/api/auth/user', {
+        fetch(`${API_BASE_URL}/api/auth/user`, {
             credentials: 'include'
         })
         .then(res => {
@@ -130,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function loadHabits() {
-        fetch('http://localhost:8080/api/habits?includeHobbies=true', {
+        fetch(`${API_BASE_URL}/api/habits?includeHobbies=true`, {
             credentials: 'include'
         })
         .then(res => {
@@ -279,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
             schedule: schedule
         };
 
-        fetch('http://localhost:8080/api/habits', {
+        fetch(`${API_BASE_URL}/api/habits`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -322,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function toggleHabitCompletion(habitId) {
         const today = new Date().toISOString().split('T')[0];
-        fetch(`http://localhost:8080/api/habits/${habitId}/completions/toggle?date=${today}`, {
+        fetch(`${API_BASE_URL}/api/habits/${habitId}/completions/toggle?date=${today}`, {
             method: 'POST',
             credentials: 'include'
         })
@@ -349,7 +350,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const editBtn = document.getElementById('editHabitBtn');
         const saveEditBtn = document.getElementById('saveEditBtn');
         
-        fetch(`http://localhost:8080/api/habits/${habitId}`, {
+        fetch(`${API_BASE_URL}/api/habits/${habitId}`, {
             credentials: 'include'
         })
         .then(res => res.json())
@@ -395,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 const updatedDescription = document.getElementById('editDescription').value;
     
-                fetch(`http://localhost:8080/api/habits/${habitId}`, {
+                fetch(`${API_BASE_URL}/api/habits/${habitId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -420,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Delete handler
             document.getElementById('deleteHabitBtn').onclick = () => {
                 if (confirm('Are you sure you want to delete this habit?')) {
-                    fetch(`http://localhost:8080/api/habits/${habitId}`, {
+                    fetch(`${API_BASE_URL}/api/habits/${habitId}`, {
                         method: 'DELETE',
                         credentials: 'include'
                     })

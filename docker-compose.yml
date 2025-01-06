@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: habit-tracker-backend
     ports:
-      - "8080:8080"
+      - "8082:8082"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
