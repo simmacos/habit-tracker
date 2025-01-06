@@ -11,3 +11,4 @@ WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 # Entrypoint per eseguire l'applicazione
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
