@@ -26,7 +26,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
@@ -42,42 +42,38 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/**")
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/public/**", "/error", "/login/**", "/oauth2/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/login")
-                        .defaultSuccessUrl(frontendUrl, true)
-                        .failureUrl(frontendUrl + "/login?error=true")
-                        .successHandler(new AuthenticationSuccessHandler() {
-                            @Override
-                            public void onAuthenticationSuccess(HttpServletRequest request,
-                                                                HttpServletResponse response,
-                                                                Authentication authentication) throws IOException, ServletException {
-                                OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-                                try {
-                                    String googleId = oauth2User.getAttribute("sub");
-                                    String email = oauth2User.getAttribute("email");
-                                    String name = oauth2User.getAttribute("name");
-                                    String pictureUrl = oauth2User.getAttribute("picture");
+                .oauth2Login(oauth2 -> {
+                    oauth2.userInfoEndpoint(userInfo ->
+                            userInfo.userService(oauth2UserService())
+                    );
+                    oauth2.successHandler((request, response, authentication) -> {
+                        OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+                        try {
+                            String googleId = oauth2User.getAttribute("sub");
+                            String email = oauth2User.getAttribute("email");
+                            String name = oauth2User.getAttribute("name");
+                            String pictureUrl = oauth2User.getAttribute("picture");
 
-                                    User savedUser = userService.findOrCreateUser(googleId, email, name, pictureUrl);
-                                    logger.info("User authenticated successfully: {}", savedUser.getEmail());
+                            User savedUser = userService.findOrCreateUser(googleId, email, name, pictureUrl);
+                            logger.info("User authenticated successfully: {}", savedUser.getEmail());
 
-                                    response.sendRedirect(frontendUrl);
-                                } catch (Exception e) {
-                                    logger.error("Error during authentication success handling: {}", e.getMessage());
-                                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                                            "Authentication processing failed");
-                                }
+                            response.sendRedirect(frontendUrl);
+                        } catch (Exception e) {
+                            logger.error("Authentication error: {}", e.getMessage());
+                            try {
+                                response.sendRedirect(frontendUrl + "?error=auth_failed");
+                            } catch (IOException ex) {
+                                logger.error("Redirect error: {}", ex.getMessage());
                             }
-                        })
-                        .userInfoEndpoint(userInfo -> userInfo.userService(oauth2UserService()))
-                )
+                        }
+                    });
+                })
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/logout")
                         .logoutSuccessUrl(frontendUrl)
@@ -94,10 +90,7 @@ public class SecurityConfig {
         DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
         return request -> {
             OAuth2User user = delegate.loadUser(request);
-            String userEmail = user.getAttribute("email");
-            if (userEmail != null) {
-                logger.info("Loading OAuth2 user: {}", userEmail);
-            }
+            logger.info("OAuth2 user loaded successfully");
             return user;
         };
     }
@@ -105,27 +98,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://127.0.0.1:5500",
-                "http://localhost:5500",
-                "https://haby.casacocchy.duckdns.org"
-        ));
-        configuration.setAllowedMethods(Arrays.asList(
-                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
-        ));
-        configuration.setAllowedHeaders(Arrays.asList(
-                "Authorization",
-                "Content-Type",
-                "X-Requested-With",
-                "Accept",
-                "Origin",
-                "Access-Control-Request-Method",
-                "Access-Control-Request-Headers"
-        ));
-        configuration.setExposedHeaders(Arrays.asList(
-                "Access-Control-Allow-Origin",
-                "Access-Control-Allow-Credentials"
-        ));
+        configuration.setAllowedOrigins(Collections.singletonList("http://127.0.0.1:5500"));
+        configuration.setAllowedMethods(Collections.singletonList("*"));
+        configuration.setAllowedHeaders(Collections.singletonList("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
