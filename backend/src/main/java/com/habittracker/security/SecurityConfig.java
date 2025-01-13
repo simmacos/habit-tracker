@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -27,6 +28,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 @Configuration
@@ -38,10 +40,13 @@ public class SecurityConfig {
     @Autowired
     private UserService userService;
 
-    @Value("${app.frontend.url}")
+    @Autowired
+    private Environment environment;
+
+    @Value("${app.frontend.url:http://127.0.0.1:5500}")
     private String frontendUrl;
 
-    @Value("${app.domain.url}")
+    @Value("${app.domain.url:https://haby.casacocchy.duckdns.org}")
     private String domainUrl;
 
     @Bean
@@ -55,7 +60,7 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 -> {
                     oauth2.userInfoEndpoint(userInfo -> userInfo
-                            .userService(this.oauth2UserService())
+                            .userService(oauth2UserService())
                     );
                     oauth2.successHandler(new AuthenticationSuccessHandler() {
                         @Override
@@ -73,16 +78,23 @@ public class SecurityConfig {
                             try {
                                 User savedUser = userService.findOrCreateUser(googleId, email, name, pictureUrl);
                                 logger.info("User processed successfully: {}", savedUser.getEmail());
+
+                                // Determina l'URL di redirect in base all'origine
+                                String referer = request.getHeader("Referer");
+                                String redirectUrl;
+                                if (referer != null && (referer.contains("localhost") || referer.contains("127.0.0.1"))) {
+                                    redirectUrl = frontendUrl;
+                                } else {
+                                    redirectUrl = domainUrl;
+                                }
+
+                                logger.info("Redirecting to: {}", redirectUrl);
+                                response.sendRedirect(redirectUrl);
                             } catch (Exception e) {
                                 logger.error("Error processing OAuth2 user: ", e);
+                                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                                        "Error during authentication");
                             }
-
-                            String referer = request.getHeader("Referer");
-                            String redirectUrl = referer != null && referer.contains("localhost")
-                                    ? frontendUrl
-                                    : domainUrl;
-
-                            response.sendRedirect(redirectUrl);
                         }
                     });
                 })
@@ -112,11 +124,21 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
+
+        // Configura gli origins permessi
+        List<String> allowedOrigins = Arrays.asList(
                 "http://localhost:5500",
+                "http://127.0.0.1:5500",
                 "https://haby.casacocchy.duckdns.org"
+        );
+        configuration.setAllowedOrigins(allowedOrigins);
+
+        // Configura i metodi HTTP permessi
+        configuration.setAllowedMethods(Arrays.asList(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"
         ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        // Configura gli headers permessi
         configuration.setAllowedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
@@ -126,11 +148,17 @@ public class SecurityConfig {
                 "Access-Control-Request-Method",
                 "Access-Control-Request-Headers"
         ));
+
+        // Configura gli headers esposti
         configuration.setExposedHeaders(Arrays.asList(
                 "Access-Control-Allow-Origin",
                 "Access-Control-Allow-Credentials"
         ));
+
+        // Abilita le credenziali
         configuration.setAllowCredentials(true);
+
+        // Imposta il tempo di cache per le risposte pre-flight
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
