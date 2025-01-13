@@ -26,6 +26,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 
 @Configuration
@@ -98,12 +99,25 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        // Configura solo l'origin del frontend
         configuration.setAllowedOrigins(Collections.singletonList("http://127.0.0.1:5500"));
-        configuration.addAllowedMethod("*");
-        configuration.addAllowedHeader("*");
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        // Aggiungi specificamente gli headers necessari
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Content-Type",
+                "Authorization",
+                "Accept",
+                "Origin",
+                "X-Requested-With"
+        ));
+
+        configuration.setExposedHeaders(Arrays.asList(
+                "Access-Control-Allow-Origin",
+                "Access-Control-Allow-Credentials"
+        ));
+
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

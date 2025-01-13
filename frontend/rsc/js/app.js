@@ -66,32 +66,54 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Week days selection
-    weekDaysButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            if (isHobbyToggle.checked) return;
-            this.classList.toggle('active');
+    function checkLoginStatus() {
+        fetch(`${API_BASE_URL}/api/auth/user`, {
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Not authenticated');
+            return res.json();
+        })
+        .then(data => {
+            if (data.name) {
+                showUserProfile(data);
+                loadHabits();
+            } else {
+                showLoginButton();
+            }
+        })
+        .catch(err => {
+            console.error('Error checking auth:', err);
+            showLoginButton();
         });
-    });
+    }     
 
-    // Hobby toggle handling
-    isHobbyToggle?.addEventListener('change', function() {
-        if (this.checked) {
-            weekDaysButtons.forEach(btn => {
-                btn.classList.add('active');
-                btn.style.opacity = '0.7';
-                btn.style.cursor = 'not-allowed';
-            });
-        } else {
-            weekDaysButtons.forEach(btn => {
-                btn.style.opacity = '1';
-                btn.style.cursor = 'pointer';
-            });
+    function showLoginButton() {
+        loginBtn.classList.remove('hidden');
+        userProfile.classList.add('hidden');
+    }
+
+    function showUserProfile(user) {
+        loginBtn.classList.add('hidden');
+        userProfile.classList.remove('hidden');
+        
+        if (user.picture) {
+            const img = new Image();
+            img.onload = function() {
+                userImg.src = user.picture;
+            };
+            img.onerror = function() {
+                console.error('Failed to load profile picture');
+                userImg.src = 'data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23E4E4DE"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>';
+            };
+            img.src = user.picture;
         }
-    });
-
-    // Save habit
-    saveHabitBtn?.addEventListener('click', saveHabit);
+        
+        userName.textContent = user.name;
+    }
 
     // Logout handling
     logoutBtn?.addEventListener('click', function() {
@@ -105,49 +127,39 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(err => console.error('Logout error:', err));
     });
 
-    function checkLoginStatus() {
-        fetch(`${API_BASE_URL}/api/auth/user`, {
-            credentials: 'include'
-        })
-        .then(res => {
-            if (!res.ok) throw new Error('Network response was not ok');
-            return res.json();
-        })
-        .then(data => {
-            console.log('Auth status:', data);
-            if (data.name) {
-                showUserProfile(data);
-                loadHabits();
-            } else {
-                loginBtn.classList.remove('hidden');
-                userProfile.classList.add('hidden');
-            }
-        })
-        .catch(err => {
-            console.error('Error checking auth:', err);
-            loginBtn.classList.remove('hidden');
-            userProfile.classList.add('hidden');
-        });
+    // Error handling functions
+    function handleResponse(response) {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
     }
 
+    function handleError(error) {
+        console.error('Operation failed:', error);
+        if (error.status === 401) {
+            handleAuthError(error);
+        } else {
+            alert('Operation failed. Please try again.');
+        }
+    }
+
+    function handleAuthError(error) {
+        console.error('Authentication error:', error);
+        if (error.status === 401) {
+            window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
+        }
+    }
+    // Habits Management
     function loadHabits() {
         fetch(`${API_BASE_URL}/api/habits?includeHobbies=true`, {
-            credentials: 'include'
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
         })
-        .then(res => {
-            if (!res.ok) throw new Error('Network response was not ok');
-            // Log della risposta grezza
-            return res.text().then(text => {
-                console.log('Raw response:', text);
-                try {
-                    return JSON.parse(text);
-                } catch (e) {
-                    console.error('JSON parse error:', e);
-                    console.log('Problematic response:', text);
-                    throw e;
-                }
-            });
-        })
+        .then(handleResponse)
         .then(habits => {
             console.log('Parsed habits:', habits);
             
@@ -180,33 +192,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }    
 
-    function showUserProfile(user) {
-        loginBtn.classList.add('hidden');
-        userProfile.classList.remove('hidden');
-        
-        if (user.picture) {
-            const img = new Image();
-            img.onload = function() {
-                userImg.src = user.picture;
-            };
-            img.onerror = function() {
-                console.error('Failed to load profile picture');
-                userImg.src = 'data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23E4E4DE"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>';
-            };
-            img.src = user.picture;
-        }
-        
-        userName.textContent = user.name;
-    }
-
     function createHabitCard(habit) {
-        // Controlla se l'habit è stata completata oggi
         const isCompletedToday = habit.completions?.some(completion => {
             const completionDate = completion.id.completionDate;
             const today = new Date().toISOString().split('T')[0];
             return completionDate === today;
         });
-    
+        
         return `
             <div class="habit-card" data-id="${habit.id}">
                 <input type="checkbox" class="habit-checkbox" ${isCompletedToday ? 'checked' : ''}>
@@ -233,6 +225,30 @@ document.addEventListener('DOMContentLoaded', function() {
         return activeDays.length === 7 ? 'Daily' : activeDays.join(', ');
     }
 
+    // Week days selection
+    weekDaysButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (isHobbyToggle.checked) return;
+            this.classList.toggle('active');
+        });
+    });
+
+    // Hobby toggle handling
+    isHobbyToggle?.addEventListener('change', function() {
+        if (this.checked) {
+            weekDaysButtons.forEach(btn => {
+                btn.classList.add('active');
+                btn.style.opacity = '0.7';
+                btn.style.cursor = 'not-allowed';
+            });
+        } else {
+            weekDaysButtons.forEach(btn => {
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            });
+        }
+    });
+
     function openModal() {
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
@@ -250,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('habitDesc').value = '';
         isHobbyToggle.checked = false;
         weekDaysButtons.forEach(btn => {
-            btn.classList.add('active');
+            btn.classList.remove('active');
             btn.style.opacity = '1';
             btn.style.cursor = 'pointer';
         });
@@ -261,6 +277,9 @@ document.addEventListener('DOMContentLoaded', function() {
             .map(btn => btn.classList.contains('active') ? '1' : '0')
             .join('');
     }
+
+    // Save habit
+    saveHabitBtn?.addEventListener('click', saveHabit);
 
     function saveHabit() {
         const name = document.getElementById('habitName').value.trim();
@@ -283,24 +302,19 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`${API_BASE_URL}/api/habits`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             },
             credentials: 'include',
             body: JSON.stringify(habitData)
         })
-        .then(res => {
-            if (!res.ok) throw new Error('Network response was not ok');
-            return res.json();
-        })
+        .then(handleResponse)
         .then(habit => {
             console.log('Habit saved:', habit);
             closeModal();
             loadHabits();
         })
-        .catch(err => {
-            console.error('Error saving habit:', err);
-            alert('Error saving habit. Please try again.');
-        });
+        .catch(handleError);
     }
 
     function addHabitCardListeners() {
@@ -325,23 +339,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const today = new Date().toISOString().split('T')[0];
         fetch(`${API_BASE_URL}/api/habits/${habitId}/completions/toggle?date=${today}`, {
             method: 'POST',
-            credentials: 'include'
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
         })
-        .then(res => {
-            if (!res.ok) throw new Error('Network response was not ok');
-            return res.json();
-        })
+        .then(handleResponse)
         .then(data => {
-            // Ricarica solo dopo conferma dal server
             loadHabits();
         })
-        .catch(err => {
-            console.error('Error toggling completion:', err);
-            // Ripristina lo stato del checkbox in caso di errore
-            loadHabits();
-        });
+        .catch(handleError);
     }
-    
 
     function showHabitDetails(habitId) {
         const modal = document.getElementById('habitDetailsModal');
@@ -351,36 +360,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const saveEditBtn = document.getElementById('saveEditBtn');
         
         fetch(`${API_BASE_URL}/api/habits/${habitId}`, {
-            credentials: 'include'
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
         })
-        .then(res => res.json())
+        .then(handleResponse)
         .then(habit => {
-            // Set title
             document.getElementById('habitDetailTitle').textContent = habit.name;
-            
-            // Set description with markdown
             const descriptionHtml = marked.parse(habit.description || '');
             document.getElementById('habitDescription').innerHTML = descriptionHtml;
     
-            // Show modal
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
 
             modal.addEventListener('click', function(e) {
-                // Se il click è sul modal (sfondo) e non sul suo contenuto
                 if (e.target === modal) {
                     closeDetailsModal();
                 }
             });
     
-            // Edit mode
             editBtn.onclick = () => {
                 viewMode.classList.add('hidden');
                 editMode.classList.remove('hidden');
                 editBtn.classList.add('hidden');
                 saveEditBtn.classList.remove('hidden');
                 
-                // Populate edit form
                 document.getElementById('editDescription').value = habit.description;
                 const weekDays = document.querySelectorAll('#editWeekDays .day-btn');
                 habit.schedule.split('').forEach((active, index) => {
@@ -388,7 +394,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             };
     
-            // Save changes
             saveEditBtn.onclick = () => {
                 const updatedSchedule = Array.from(document.querySelectorAll('#editWeekDays .day-btn'))
                     .map(btn => btn.classList.contains('active') ? '1' : '0')
@@ -399,7 +404,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetch(`${API_BASE_URL}/api/habits/${habitId}`, {
                     method: 'PUT',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
                     credentials: 'include',
                     body: JSON.stringify({
@@ -408,30 +414,35 @@ document.addEventListener('DOMContentLoaded', function() {
                         description: updatedDescription
                     })
                 })
-                .then(res => res.json())
+                .then(handleResponse)
                 .then(() => {
                     loadHabits();
                     closeDetailsModal();
-                });
+                })
+                .catch(handleError);
             };
     
-            // Close modal handler
             document.getElementById('closeDetailsModal').onclick = closeDetailsModal;
     
-            // Delete handler
             document.getElementById('deleteHabitBtn').onclick = () => {
                 if (confirm('Are you sure you want to delete this habit?')) {
                     fetch(`${API_BASE_URL}/api/habits/${habitId}`, {
                         method: 'DELETE',
-                        credentials: 'include'
+                        credentials: 'include',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
                     })
+                    .then(handleResponse)
                     .then(() => {
                         loadHabits();
                         closeDetailsModal();
-                    });
+                    })
+                    .catch(handleError);
                 }
             };
-        });
+        })
+        .catch(handleError);
     
         function closeDetailsModal() {
             modal.classList.remove('active');
@@ -441,8 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
             editBtn.classList.remove('hidden');
             saveEditBtn.classList.add('hidden');
         }
-    }    
-    
+    }
 
     // Add mobile close button
     if (isMobile) {
