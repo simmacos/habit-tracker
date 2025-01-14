@@ -68,10 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function checkLoginStatus() {
         fetch(`${API_BASE_URL}/api/auth/user`, {
-            credentials: 'include',
-            headers: {
-                'Accept': 'application/json'
-            }
+            credentials: 'include'  // Rimuovi tutti gli headers
         })
         .then(res => {
             if (!res.ok) throw new Error('Not authenticated');
@@ -89,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error checking auth:', err);
             showLoginButton();
         });
-    }     
+    }    
 
     function showLoginButton() {
         loginBtn.classList.remove('hidden');
