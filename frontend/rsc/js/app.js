@@ -113,15 +113,31 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Logout handling
-    logoutBtn?.addEventListener('click', function() {
+    logoutBtn?.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
         fetch(`${API_BASE_URL}/api/auth/logout`, {
             method: 'POST',
-            credentials: 'include'
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json'
+            }
         })
-        .then(() => {
-            window.location.reload();
+        .then(response => {
+            if (response.ok) {
+                // Pulisci lo storage locale se necessario
+                localStorage.clear();
+                // Ricarica la pagina
+                window.location.href = '/';
+            } else {
+                throw new Error('Logout failed');
+            }
         })
-        .catch(err => console.error('Logout error:', err));
+        .catch(error => {
+            console.error('Logout error:', error);
+            alert('Logout failed. Please try again.');
+        });
     });
 
     // Error handling functions

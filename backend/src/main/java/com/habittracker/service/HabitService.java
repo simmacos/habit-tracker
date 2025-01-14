@@ -11,8 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
-
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -25,7 +26,6 @@ public class HabitService {
     @Autowired
     private UserRepository userRepository;
 
-    // Create
     public Habit createHabit(Long userId, Habit habit) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -39,17 +39,40 @@ public class HabitService {
         return habitRepository.save(habit);
     }
 
-    // Il resto dei metodi rimane invariato
     public List<Habit> getUserHabits(Long userId, boolean includeHobbies) {
-        // Verifica che l'utente esista
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("User not found");
         }
 
-        if (includeHobbies) {
-            return habitRepository.findByUserIdAndIsActiveTrue(userId);
-        }
-        return habitRepository.findByUserIdAndIsHobbyFalseAndIsActiveTrue(userId);
+        // Ottieni tutti gli habits attivi dell'utente
+        List<Habit> allHabits = habitRepository.findByUserIdAndIsActiveTrue(userId);
+
+        // Ottieni il giorno corrente (0 = Domenica, 1 = Lunedì, ..., 6 = Sabato)
+        int currentDay = LocalDate.now().getDayOfWeek().getValue() % 7;
+
+        return allHabits.stream()
+                .filter(habit -> {
+                    // Se è un hobby e non dobbiamo includere hobby, salta
+                    if (!includeHobbies && habit.getIsHobby()) {
+                        return false;
+                    }
+
+                    // Se è un hobby, mostralo sempre
+                    if (habit.getIsHobby()) {
+                        return true;
+                    }
+
+                    // Per gli habits normali, controlla lo schedule
+                    String schedule = habit.getSchedule();
+                    if (schedule == null || schedule.length() != 7) {
+                        logger.warn("Invalid schedule for habit id {}: {}", habit.getId(), schedule);
+                        return false;
+                    }
+
+                    // Controlla se l'habit è schedulato per oggi
+                    return schedule.charAt(currentDay) == '1';
+                })
+                .collect(Collectors.toList());
     }
 
     public Habit getHabitById(Long habitId, Long userId) {
@@ -58,7 +81,6 @@ public class HabitService {
                 .orElseThrow(() -> new ResourceNotFoundException("Habit not found"));
     }
 
-    // Update
     public Habit updateHabit(Long habitId, Long userId, Habit updatedHabit) {
         Habit habit = getHabitById(habitId, userId);
 
@@ -71,7 +93,6 @@ public class HabitService {
         return habitRepository.save(habit);
     }
 
-    // Delete (soft delete)
     public void deleteHabit(Long habitId, Long userId) {
         Habit habit = getHabitById(habitId, userId);
         habit.setIsActive(false);
