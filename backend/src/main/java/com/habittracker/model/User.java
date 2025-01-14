@@ -5,8 +5,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
-
 
 @Entity
 @Table(name = "users")
@@ -40,4 +40,14 @@ public class User {
     @OneToMany(mappedBy = "user")
     @JsonManagedReference
     private List<Habit> habits;
+
+    // Metodo per verificare se l'utente è attivo
+    public boolean isActive() {
+        return isActive != null && isActive;
+    }
+
+    // Metodo per ottenere l'identificatore univoco dell'utente
+    public String getUsername() {
+        return email;
+    }
 }

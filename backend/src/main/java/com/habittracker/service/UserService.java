@@ -7,12 +7,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 
 @Service
-@Transactional  // Aggiungiamo questa annotation importante
+@Transactional
 public class UserService {
-
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     @Autowired
@@ -46,5 +46,11 @@ public class UserService {
             logger.error("Errore nel salvare l'utente: ", e);
             throw e;
         }
+    }
+
+    // Aggiungi questo nuovo metodo
+    public User findByEmail(String email) {
+        logger.debug("Cercando utente con email: {}", email);
+        return userRepository.findByEmail(email);
     }
 }
