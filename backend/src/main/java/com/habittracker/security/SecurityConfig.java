@@ -101,11 +101,15 @@ public class SecurityConfig {
                 )
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/logout")
-                        .logoutSuccessUrl(frontendUrl)
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            logger.info("Logout successful, redirecting to: {}", frontendUrl);
+                            response.sendRedirect(frontendUrl);
+                        })
                         .clearAuthentication(true)
                         .deleteCookies("JSESSIONID", "remember-me")
                         .invalidateHttpSession(true)
                 );
+
 
         return http.build();
     }

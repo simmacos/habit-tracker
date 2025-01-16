@@ -112,33 +112,22 @@ document.addEventListener('DOMContentLoaded', function() {
         userName.textContent = user.name;
     }
 
-    // Logout handling
     logoutBtn?.addEventListener('click', function(e) {
         e.preventDefault();
-        e.stopPropagation();
         
         fetch(`${API_BASE_URL}/api/auth/logout`, {
             method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Accept': 'application/json'
-            }
+            credentials: 'include'
         })
-        .then(response => {
-            if (response.ok) {
-                // Pulisci lo storage locale se necessario
-                localStorage.clear();
-                // Ricarica la pagina
-                window.location.href = '/';
-            } else {
-                throw new Error('Logout failed');
-            }
+        .then(response => response.json())
+        .then(data => {
+            window.location.href = data.redirectUrl || 'http://127.0.0.1:5500/frontend/index.html';
         })
         .catch(error => {
             console.error('Logout error:', error);
-            alert('Logout failed. Please try again.');
+            window.location.href = 'http://127.0.0.1:5500/frontend/index.html';
         });
-    });
+    });    
 
     // Error handling functions
     function handleResponse(response) {

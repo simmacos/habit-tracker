@@ -2,6 +2,7 @@ package com.habittracker.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -22,6 +23,9 @@ import java.util.Optional;
 @RequestMapping("/api/auth")
 public class AuthController {
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     @GetMapping("/user")
     public ResponseEntity<?> getUser() {
@@ -54,23 +58,18 @@ public class AuthController {
         try {
             logger.info("Processing logout request");
 
-            // Get current authentication
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-            // Perform logout using SecurityContextLogoutHandler
             if (auth != null) {
                 new SecurityContextLogoutHandler().logout(request, response, auth);
                 logger.info("Logout successful for user: {}", auth.getName());
             }
 
-            // Invalidate session if exists
             HttpSession session = request.getSession(false);
             if (session != null) {
                 session.invalidate();
                 logger.debug("Session invalidated");
             }
 
-            // Clean up cookies
             Cookie[] cookies = request.getCookies();
             if (cookies != null) {
                 for (Cookie cookie : cookies) {
@@ -84,14 +83,14 @@ public class AuthController {
                 logger.debug("Cookies cleared");
             }
 
-            // Clear security context
             SecurityContextHolder.clearContext();
             logger.debug("Security context cleared");
 
             return ResponseEntity.ok()
                     .body(Map.of(
                             "message", "Logged out successfully",
-                            "status", "success"
+                            "status", "success",
+                            "redirectUrl", frontendUrl  // Aggiungi l'URL di redirect
                     ));
 
         } catch (Exception e) {
@@ -99,7 +98,8 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of(
                             "error", "Logout failed",
-                            "message", e.getMessage()
+                            "message", e.getMessage(),
+                            "redirectUrl", frontendUrl  // Anche in caso di errore, fornisci l'URL
                     ));
         }
     }
