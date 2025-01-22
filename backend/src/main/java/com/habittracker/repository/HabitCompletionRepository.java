@@ -12,26 +12,26 @@ import java.util.Optional;
 
 @Repository
 public interface HabitCompletionRepository extends JpaRepository<HabitCompletion, HabitCompletionId> {
-    // Trova i completamenti di un habit in un range di date
-    List<HabitCompletion> findByHabitIdAndIdCompletionDateBetween(
+
+    // Query corretta usando la sintassi dell'ID embedded
+    boolean existsByHabitIdAndId_CompletionDate(Long habitId, LocalDate date);
+
+    // Metodi esistenti aggiornati
+    List<HabitCompletion> findByHabitIdAndId_CompletionDateBetween(
             Long habitId,
             LocalDate startDate,
             LocalDate endDate
     );
 
-    // Trova i completamenti di un habit per una data specifica
-    Optional<HabitCompletion> findByHabitIdAndIdCompletionDate(
+    Optional<HabitCompletion> findByHabitIdAndId_CompletionDate(
             Long habitId,
             LocalDate date
     );
 
-    // Trova tutti i completamenti di oggi per un utente
     @Query("SELECT hc FROM HabitCompletion hc WHERE hc.habit.user.id = :userId " +
             "AND hc.id.completionDate = :date")
     List<HabitCompletion> findTodayCompletionsByUserId(
             @Param("userId") Long userId,
             @Param("date") LocalDate date
     );
-
-    boolean existsByHabitIdAndCompletionDate(Long habitId, LocalDate date);
 }

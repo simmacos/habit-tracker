@@ -1,6 +1,7 @@
 package com.habittracker.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 import lombok.*;
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -12,7 +13,10 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 public class HabitCompletionId implements Serializable {
+    @Column(name = "habit_id")
     private Long habitId;
+
+    @Column(name = "completion_date")
     private LocalDate completionDate;
 
     @Override
