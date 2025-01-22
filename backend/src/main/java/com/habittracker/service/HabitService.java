@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -48,31 +49,23 @@ public class HabitService {
         List<Habit> allHabits = habitRepository.findByUserIdAndIsActiveTrue(userId);
 
         // Ottieni il giorno corrente (0 = Domenica, 1 = Lunedì, ..., 6 = Sabato)
-        int currentDay = LocalDate.now().getDayOfWeek().getValue() % 7;
-
+        int currentDay = LocalDate.now(ZoneId.of("Europe/Rome")).getDayOfWeek().getValue() % 7;
+        
         return allHabits.stream()
-                .filter(habit -> {
-                    // Se è un hobby e non dobbiamo includere hobby, salta
-                    if (!includeHobbies && habit.getIsHobby()) {
-                        return false;
-                    }
-
-                    // Se è un hobby, mostralo sempre
-                    if (habit.getIsHobby()) {
-                        return true;
-                    }
-
-                    // Per gli habits normali, controlla lo schedule
+            .filter(habit -> {
+                if (habit.getIsHobby()) {
+                    return includeHobbies; // Mostra hobby solo se includeHobbies=true
+                } else {
+                    // Logica normale per gli habit non-hobby
                     String schedule = habit.getSchedule();
                     if (schedule == null || schedule.length() != 7) {
                         logger.warn("Invalid schedule for habit id {}: {}", habit.getId(), schedule);
                         return false;
                     }
-
-                    // Controlla se l'habit è schedulato per oggi
                     return schedule.charAt(currentDay) == '1';
-                })
-                .collect(Collectors.toList());
+                }
+            })
+            .collect(Collectors.toList());
     }
 
     public Habit getHabitById(Long habitId, Long userId) {
