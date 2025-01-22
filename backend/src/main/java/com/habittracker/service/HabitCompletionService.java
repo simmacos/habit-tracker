@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -48,22 +49,50 @@ public class HabitCompletionService {
         }
     }
 
-    // Get current streak
     public long getCurrentStreak(Long habitId, Long userId) {
         Habit habit = habitService.getHabitById(habitId, userId);
-        LocalDate today = LocalDate.now();
-        LocalDate date = today;
+        String schedule = habit.getSchedule();
+        LocalDate currentDate = LocalDate.now();
         long streak = 0;
+        boolean foundBreak = false;
 
-        while (true) {
-            if (completionRepository.findByHabitIdAndIdCompletionDate(habitId, date).isPresent()) {
-                streak++;
-                date = date.minusDays(1);
-            } else {
+        logger.info("Calculating streak for habit {} with schedule: {}", habitId, schedule);
+
+        while (!foundBreak) {
+            int dayOfWeek = currentDate.getDayOfWeek().getValue() % 7; // 0=Dom, 1=Lun, ..., 6=Sab
+            boolean isActiveDay = schedule.charAt(dayOfWeek) == '1';
+
+            if (isActiveDay) {
+                Optional<HabitCompletion> completion = completionRepository.findByHabitIdAndIdCompletionDate(
+                        habitId,
+                        currentDate
+                );
+
+                logger.debug("Checking {} (day {}): Active={}, Completed={}",
+                        currentDate, dayOfWeek, isActiveDay, completion.isPresent());
+
+                if (completion.isPresent()) {
+                    streak++;
+                } else {
+                    // Controlla se è il primo giorno attivo non completato
+                    if (currentDate.isEqual(LocalDate.now())) {
+                        currentDate = currentDate.minusDays(1);
+                        continue;
+                    }
+                    foundBreak = true;
+                }
+            }
+
+            // Interrompi se raggiungi 1 anno indietro (prevenzione loop infinito)
+            if (currentDate.isBefore(LocalDate.now().minusYears(1))) {
+                logger.warn("Streak calculation reached 1 year limit for habit {}", habitId);
                 break;
             }
+
+            currentDate = currentDate.minusDays(1);
         }
 
+        logger.info("Final streak count for habit {}: {}", habitId, streak);
         return streak;
     }
 
