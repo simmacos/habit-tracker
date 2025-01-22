@@ -9,9 +9,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Transactional
@@ -24,27 +24,23 @@ public class HabitCompletionService {
     @Autowired
     private HabitService habitService;
 
-    // Toggle completion for a habit
     public boolean toggleCompletion(Long habitId, Long userId, LocalDate date) {
         // Verifica che l'habit appartenga all'utente
         Habit habit = habitService.getHabitById(habitId, userId);
 
-        // Cerca se esiste già un completamento
-        HabitCompletionId completionId = new HabitCompletionId(habitId, date);
-        boolean exists = completionRepository.existsById(completionId);
+        // Usa il metodo corretto del repository
+        boolean exists = completionRepository.existsByHabitIdAndId_CompletionDate(habitId, date);
 
         if (exists) {
-            // Se esiste, rimuovi il completamento
-            completionRepository.deleteById(completionId);
-            logger.info("Removed completion for habit {} on {}", habitId, date);
+            completionRepository.deleteById(new HabitCompletionId(habitId, date));
+            logger.info("Rimosso completamento per habit {} il {}", habitId, date);
             return false;
         } else {
-            // Se non esiste, crea nuovo completamento
             HabitCompletion completion = new HabitCompletion();
-            completion.setId(completionId);
+            completion.setId(new HabitCompletionId(habitId, date));
             completion.setHabit(habit);
             completionRepository.save(completion);
-            logger.info("Added completion for habit {} on {}", habitId, date);
+            logger.info("Aggiunto completamento per habit {} il {}", habitId, date);
             return true;
         }
     }
@@ -57,46 +53,35 @@ public class HabitCompletionService {
         boolean foundBreak = false;
         int consecutiveDaysLimit = 365;
 
-        logger.debug("🚀 Starting streak calculation for habit {}...", habitId);
-        logger.debug("🗓️ Schedule: {}", schedule);
-        logger.debug("📅 Today: {}", currentDate);
+        logger.debug("Calcolo streak per habit {} con schedule: {}", habitId, schedule);
 
         while (!foundBreak && streak < consecutiveDaysLimit) {
             int dayOfWeek = currentDate.getDayOfWeek().getValue() % 7;
             boolean isActiveDay = schedule.charAt(dayOfWeek) == '1';
 
-            logger.debug("🔍 Checking {} (day {}): Active={}", currentDate, dayOfWeek, isActiveDay);
-
             if (isActiveDay) {
-                boolean isCompleted = completionRepository.existsByHabitIdAndCompletionDate(habitId, currentDate);
-                logger.debug("   ✔️ Active day - Completed: {}", isCompleted);
+                boolean isCompleted = completionRepository.existsByHabitIdAndId_CompletionDate(habitId, currentDate);
 
                 if (isCompleted) {
                     streak++;
                 } else {
                     foundBreak = true;
-                    logger.debug("   ❌ Active day not completed - Breaking streak");
                 }
-            } else {
-                logger.debug("   ⏭️ Skipping inactive day");
             }
-
             currentDate = currentDate.minusDays(1);
         }
 
-        logger.debug("🎯 Final streak count: {}", streak);
+        logger.info("Streak finale per habit {}: {}", habitId, streak);
         return streak;
     }
 
-    // Get completions for a date range
     public List<HabitCompletion> getCompletionsForRange(Long habitId, Long userId,
                                                         LocalDate startDate, LocalDate endDate) {
-        habitService.getHabitById(habitId, userId); // Verifica che l'habit appartenga all'utente
-        return completionRepository.findByHabitIdAndIdCompletionDateBetween(
-                habitId, startDate, endDate);
+        habitService.getHabitById(habitId, userId); // Verifica l'appartenenza
+        // Usa il metodo corretto del repository
+        return completionRepository.findByHabitIdAndId_CompletionDateBetween(habitId, startDate, endDate);
     }
 
-    // Get today's completions for user
     public List<HabitCompletion> getTodayCompletions(Long userId) {
         return completionRepository.findTodayCompletionsByUserId(userId, LocalDate.now());
     }
