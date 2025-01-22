@@ -32,4 +32,6 @@ public interface HabitCompletionRepository extends JpaRepository<HabitCompletion
             @Param("userId") Long userId,
             @Param("date") LocalDate date
     );
+
+    boolean existsByHabitIdAndCompletionDate(Long habitId, LocalDate date);
 }
