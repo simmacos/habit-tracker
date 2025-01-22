@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.List;
@@ -67,9 +68,19 @@ public class Habit {
     private Boolean completedToday;
 
     @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.lastModified = LocalDateTime.now();
+        normalizeSchedule();
+    }
+
     @PreUpdate
+    protected void onUpdate() {
+        this.lastModified = LocalDateTime.now();
+        normalizeSchedule();
+    }
+
     private void normalizeSchedule() {
-        // Normalizza lo schedule a 7 caratteri
         if (this.schedule != null) {
             if (this.schedule.length() > 7) {
                 this.schedule = this.schedule.substring(0, 7);
@@ -77,17 +88,6 @@ public class Habit {
                 this.schedule = String.format("%-7s", this.schedule).replace(' ', '0');
             }
         }
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.lastModified = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.lastModified = LocalDateTime.now();
     }
 
     public Boolean isCompletedToday() {
