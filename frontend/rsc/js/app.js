@@ -276,6 +276,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function getScheduleFromButtons() {
         return Array.from(weekDaysButtons)
+            .slice(0, 7) // Prende solo i primi 7 giorni
             .map(btn => btn.classList.contains('active') ? '1' : '0')
             .join('');
     }

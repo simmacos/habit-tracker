@@ -52,19 +52,21 @@ public class HabitService {
         int currentDay = LocalDate.now(ZoneId.of("Europe/Rome")).getDayOfWeek().getValue() % 7;
         
         return allHabits.stream()
-            .filter(habit -> {
-                if (habit.getIsHobby()) {
-                    return includeHobbies; // Mostra hobby solo se includeHobbies=true
-                } else {
-                    // Logica normale per gli habit non-hobby
+                .filter(habit -> {
+                    if (habit.getIsHobby()) {
+                        return includeHobbies;
+                    }
+
                     String schedule = habit.getSchedule();
                     if (schedule == null || schedule.length() != 7) {
-                        logger.warn("Invalid schedule for habit id {}: {}", habit.getId(), schedule);
+                        logger.error("Invalid schedule length for habit {}: {}", habit.getId(), schedule);
                         return false;
                     }
-                    return schedule.charAt(currentDay) == '1';
-                }
-            })
+
+                    // Normalizza lo schedule rimuovendo caratteri extra
+                    String normalizedSchedule = schedule.substring(0, 7);
+                    return normalizedSchedule.charAt(currentDay) == '1';
+                })
             .collect(Collectors.toList());
     }
 

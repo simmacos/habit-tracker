@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
@@ -26,28 +28,32 @@ public class Habit {
     private User user;
 
     @JsonProperty("name")
+    @Column(nullable = false, length = 100)
     private String name;
 
     @Column(columnDefinition = "TEXT")
     @JsonProperty("description")
     private String description;
 
-    @Column(name = "is_hobby")
+    @Column(name = "is_hobby", nullable = false)
     @JsonProperty("isHobby")
     private Boolean isHobby = false;
 
     @JsonProperty("schedule")
+    @Column(nullable = false, length = 7)
+    @Size(min = 7, max = 7, message = "Schedule must be exactly 7 characters long")
+    @Pattern(regexp = "[01]{7}", message = "Schedule must contain only 0s and 1s")
     private String schedule;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false, updatable = false)
     @JsonProperty("createdAt")
     private LocalDateTime createdAt;
 
-    @Column(name = "last_modified")
+    @Column(name = "last_modified", nullable = false)
     @JsonProperty("lastModified")
     private LocalDateTime lastModified;
 
-    @Column(name = "is_active")
+    @Column(name = "is_active", nullable = false)
     @JsonProperty("isActive")
     private Boolean isActive = true;
 
@@ -57,8 +63,32 @@ public class Habit {
     private List<HabitCompletion> completions;
 
     @JsonProperty("completedToday")
-    @Transient // Non salvato nel DB, calcolato al volo
+    @Transient
     private Boolean completedToday;
+
+    @PrePersist
+    @PreUpdate
+    private void normalizeSchedule() {
+        // Normalizza lo schedule a 7 caratteri
+        if (this.schedule != null) {
+            if (this.schedule.length() > 7) {
+                this.schedule = this.schedule.substring(0, 7);
+            } else if (this.schedule.length() < 7) {
+                this.schedule = String.format("%-7s", this.schedule).replace(' ', '0');
+            }
+        }
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.lastModified = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.lastModified = LocalDateTime.now();
+    }
 
     public Boolean isCompletedToday() {
         LocalDate today = LocalDate.now();
@@ -67,8 +97,6 @@ public class Habit {
                         .anyMatch(c -> c.getId().getCompletionDate().equals(today));
     }
 
-    // Aggiungi questo metodo per assicurarti che il campo completedToday
-    // venga sempre valorizzato durante la serializzazione JSON
     @JsonProperty("completedToday")
     public Boolean getCompletedToday() {
         return isCompletedToday();
