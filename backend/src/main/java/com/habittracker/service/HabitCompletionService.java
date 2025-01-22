@@ -74,12 +74,10 @@ public class HabitCompletionService {
                 if (completion.isPresent()) {
                     streak++;
                 } else {
-                    // Controlla se è il primo giorno attivo non completato
-                    if (currentDate.isEqual(LocalDate.now())) {
-                        currentDate = currentDate.minusDays(1);
-                        continue;
+                    // Se è il primo giorno attivo non completato, continua a controllare i giorni precedenti
+                    if (!currentDate.isEqual(LocalDate.now())) {
+                        foundBreak = true;
                     }
-                    foundBreak = true;
                 }
             }
 
