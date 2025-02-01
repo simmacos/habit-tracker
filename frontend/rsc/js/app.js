@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
         }
     }
-    // Habits Management
+
     function loadHabits() {
         fetch(`${API_BASE_URL}/api/habits?includeHobbies=true`, {
             credentials: 'include',
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .then(handleResponse)
-        .then(habits => {
+        .then(async habits => {
             console.log('Parsed habits:', habits);
             
             if (!Array.isArray(habits)) {
@@ -170,6 +170,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
     
+            for (let habit of habits) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/habits/${habit.id}/completions/streak`, {  // <-- Path corretto
+                        credentials: 'include',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                    const streakData = await response.json();
+                    habit.streak = streakData.streak;
+                } catch (error) {
+                    console.error(`Error loading streak for habit ${habit.id}:`, error);
+                    habit.streak = 0;
+                }
+            }
+                        
             const regularHabits = habits.filter(h => !h.isHobby);
             const hobbies = habits.filter(h => h.isHobby);
     
@@ -192,31 +208,31 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error loading habits:', err);
             habitsList.innerHTML = '<div class="error">Error loading habits</div>';
         });
-    }    
+    }
 
-    function createHabitCard(habit) {
-        const isCompletedToday = habit.completions?.some(completion => {
-            const completionDate = completion.id.completionDate;
-            const today = new Date().toISOString().split('T')[0];
-            return completionDate === today;
-        });
-        
-        return `
-            <div class="habit-card" data-id="${habit.id}">
-                <input type="checkbox" class="habit-checkbox" ${isCompletedToday ? 'checked' : ''}>
-                <div class="habit-content">
-                    <div class="habit-info">
-                        <div class="habit-title">${habit.name}</div>
-                        <div class="habit-meta">${habit.isHobby ? 'Flexible' : getScheduleDisplay(habit.schedule)}</div>
-                    </div>
-                    <div class="habit-streak">
-                        <i class="fas fa-fire"></i>
-                        <span>0 days</span>
-                    </div>
+function createHabitCard(habit) {
+    const isCompletedToday = habit.completions?.some(completion => {
+        const completionDate = completion.id.completionDate;
+        const today = new Date().toISOString().split('T')[0];
+        return completionDate === today;
+    });
+    
+    return `
+        <div class="habit-card" data-id="${habit.id}">
+            <input type="checkbox" class="habit-checkbox" ${isCompletedToday ? 'checked' : ''}>
+            <div class="habit-content">
+                <div class="habit-info">
+                    <div class="habit-title">${habit.name}</div>
+                    <div class="habit-meta">${habit.isHobby ? 'Flexible' : getScheduleDisplay(habit.schedule)}</div>
+                </div>
+                <div class="habit-streak">
+                    <i class="fas fa-fire"></i>
+                    <span>${habit.streak || 0} days</span>
                 </div>
             </div>
-        `;
-    }    
+        </div>
+    `;
+}
 
     function getScheduleDisplay(schedule) {
         const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
