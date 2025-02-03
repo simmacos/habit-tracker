@@ -121,11 +121,11 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(data => {
-            window.location.href = data.redirectUrl || 'http://127.0.0.1:5500/frontend/index.html';
+            window.location.href = data.redirectUrl || 'http://habit.simmacococchiaro.com.s3-website.eu-central-1.amazonaws.com/frontend/index.html';
         })
         .catch(error => {
             console.error('Logout error:', error);
-            window.location.href = 'http://127.0.0.1:5500/frontend/index.html';
+            window.location.href = 'http://habit.simmacococchiaro.com.s3-website.eu-central-1.amazonaws.com/frontend/index.html';
         });
     });    
 
