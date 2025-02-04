@@ -1,7 +1,7 @@
 package com.habittracker.security;
 
-import com.habittracker.model.User;
-import com.habittracker.service.UserService;
+import java.util.Collections;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +21,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Collections;
+import com.habittracker.model.User;
+import com.habittracker.service.UserService;
 
 @Configuration
 @EnableWebSecurity
@@ -124,7 +125,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Collections.singletonList("http://habit.simmacococchiaro.com.s3-website.eu-central-1.amazonaws.com/"));
+        configuration.setAllowedOrigins(Collections.singletonList("https://habit.simmacococchiaro.com"));
         configuration.setAllowedMethods(Collections.singletonList("*"));
         configuration.setAllowedHeaders(Collections.singletonList("*"));
         configuration.setAllowCredentials(true);
