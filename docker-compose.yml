@@ -1,10 +1,13 @@
-version: '3.8'
+# docker-compose.yml
+name: habit-tracker
 
 services:
   habit-tracker-backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        - SPRING_PROFILES_ACTIVE=prod
     container_name: habit-tracker-backend
     ports:
       - "8082:8082"
@@ -15,8 +18,28 @@ services:
       - SPRING_DATASOURCE_URL=${DB_URL}
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - APP_FRONTEND_URL=${FRONTEND_URL}
+      - APP_DOMAIN_URL=${DOMAIN_URL}
+      - OAUTH2_REDIRECT_URI=${OAUTH2_REDIRECT_URI}
+      - SERVER_SERVLET_SESSION_COOKIE_SECURE=true
+      - SERVER_SERVLET_SESSION_COOKIE_SAME_SITE=none
+      - SPRING_SECURITY_REMEMBER_ME_KEY=${REMEMBER_ME_KEY}
+      - SERVER_SERVLET_SESSION_TIMEOUT=${SESSION_TIMEOUT}
     env_file:
       - .env
+    networks:
+      - habit-network
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    healthcheck:
+      test:
+        ["CMD", "curl", "-f", "http://localhost:8082/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  habit-network:
+    driver: bridge
