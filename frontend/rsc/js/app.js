@@ -72,32 +72,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function checkLoginStatus() {
     fetch(`${API_BASE_URL}/api/auth/user`, {
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        // Aggiungi questo header per gestire i redirect
-        "X-Requested-With": "XMLHttpRequest",
-      },
+      credentials: "include", // Rimuovi tutti gli headers
     })
       .then((res) => {
-        if (res.status === 401 || res.redirected) {
-          // Redirect MANUALE al login Google
-          window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
-          return Promise.reject("Redirecting to Google");
-        }
+        if (!res.ok) throw new Error("Not authenticated");
         return res.json();
       })
       .then((data) => {
         if (data.name) {
           showUserProfile(data);
           loadHabits();
+        } else {
+          showLoginButton();
         }
       })
       .catch((err) => {
-        // Ignora errori di redirect
-        if (err !== "Redirecting to Google") {
-          console.error("Auth check failed:", err);
-        }
+        console.error("Error checking auth:", err);
+        showLoginButton();
       });
   }
 
@@ -136,11 +127,11 @@ document.addEventListener("DOMContentLoaded", function () {
       .then((response) => response.json())
       .then((data) => {
         window.location.href =
-          data.redirectUrl || "https://habit.simmacococchiaro.com/index.html";
+          data.redirectUrl || "http://127.0.0.1:5500/frontend/index.html";
       })
       .catch((error) => {
         console.error("Logout error:", error);
-        window.location.href = "https://habit.simmacococchiaro.com/index.html";
+        window.location.href = "http://127.0.0.1:5500/frontend/index.html";
       });
   });
 
@@ -190,7 +181,6 @@ document.addEventListener("DOMContentLoaded", function () {
             const response = await fetch(
               `${API_BASE_URL}/api/habits/${habit.id}/completions/streak`,
               {
-                // <-- Path corretto
                 credentials: "include",
                 headers: {
                   Accept: "application/json",
@@ -240,26 +230,26 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     return `
-        <div class="habit-card" data-id="${habit.id}">
-            <input type="checkbox" class="habit-checkbox" ${
-              isCompletedToday ? "checked" : ""
-            }>
-            <div class="habit-content">
-                <div class="habit-info">
-                    <div class="habit-title">${habit.name}</div>
-                    <div class="habit-meta">${
-                      habit.isHobby
-                        ? "Flexible"
-                        : getScheduleDisplay(habit.schedule)
-                    }</div>
-                </div>
-                <div class="habit-streak">
-                    <i class="fas fa-fire"></i>
-                    <span>${habit.streak || 0} days</span>
-                </div>
-            </div>
-        </div>
-    `;
+      <div class="habit-card" data-id="${habit.id}">
+          <input type="checkbox" class="habit-checkbox" ${
+            isCompletedToday ? "checked" : ""
+          }>
+          <div class="habit-content">
+              <div class="habit-info">
+                  <div class="habit-title">${habit.name}</div>
+                  <div class="habit-meta">${
+                    habit.isHobby
+                      ? "Flexible"
+                      : getScheduleDisplay(habit.schedule)
+                  }</div>
+              </div>
+              <div class="habit-streak">
+                  <i class="fas fa-fire"></i>
+                  <span>${habit.streak || 0} days</span>
+              </div>
+          </div>
+      </div>
+  `;
   }
 
   function getScheduleDisplay(schedule) {
