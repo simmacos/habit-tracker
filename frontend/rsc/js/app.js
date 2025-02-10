@@ -181,6 +181,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const response = await fetch(
               `${API_BASE_URL}/api/habits/${habit.id}/completions/streak`,
               {
+                // <-- Path corretto
                 credentials: "include",
                 headers: {
                   Accept: "application/json",
