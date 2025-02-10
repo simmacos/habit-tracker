@@ -63,53 +63,25 @@ public class SecurityConfig {
         };
     }
 
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/public/**", "/error", "/login/**", "/oauth2/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .oauth2Login(oauth2 -> {
-                    oauth2.userInfoEndpoint(userInfo ->
-                            userInfo.userService(oauth2UserService())
-                    );
-                    oauth2.successHandler((request, response, authentication) -> {
-                        OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-                        try {
-                            String googleId = oauth2User.getAttribute("sub");
-                            String email = oauth2User.getAttribute("email");
-                            String name = oauth2User.getAttribute("name");
-                            String pictureUrl = oauth2User.getAttribute("picture");
-
-                            User savedUser = userService.findOrCreateUser(googleId, email, name, pictureUrl);
-                            logger.info("User authenticated successfully: {}", savedUser.getEmail());
-
-                            response.sendRedirect(frontendUrl);
-                        } catch (Exception e) {
-                            logger.error("Authentication error: {}", e.getMessage());
-                            response.sendRedirect(frontendUrl + "?error=auth_failed");
-                        }
-                    });
-                })
-                .rememberMe(remember -> remember
-                        .userDetailsService(userDetailsService())
-                        .key("uniqueAndSecureKey")
-                        .tokenValiditySeconds(86400)
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/api/auth/logout")
-                        .logoutSuccessHandler((request, response, authentication) -> {
-                            logger.info("Logout successful, redirecting to: {}", frontendUrl);
-                            response.sendRedirect(frontendUrl);
-                        })
-                        .clearAuthentication(true)
-                        .deleteCookies("JSESSIONID", "remember-me")
-                        .invalidateHttpSession(true)
-                );
-
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/login/**", "/oauth2/**", "/api/public/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .oauth2Login(oauth2 -> {
+                oauth2.successHandler((request, response, authentication) -> {
+                    // Log per debug
+                    logger.info("Authentication successful, redirecting to: {}", frontendUrl);
+                    response.setHeader("Access-Control-Allow-Origin", frontendUrl);
+                    response.setHeader("Access-Control-Allow-Credentials", "true");
+                    response.sendRedirect(frontendUrl);
+                });
+            });
 
         return http.build();
     }
@@ -127,13 +99,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Collections.singletonList("https://habit.simmacococchiaro.com"));
+        configuration.setAllowedOrigins(Collections.singletonList(frontendUrl));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-    
+        configuration.setMaxAge(3600L);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
-    }    
+    }
 }
