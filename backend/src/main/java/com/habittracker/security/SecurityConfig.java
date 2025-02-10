@@ -1,7 +1,6 @@
 package com.habittracker.security;
 
 import java.util.Arrays;
-import java.util.Collections;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +34,9 @@ public class SecurityConfig {
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
+
+    @Value("${ALLOWED_ORIGINS}")
+    private String allowedOrigins;
 
     @Bean
     public UserDetailsService userDetailsService() {
@@ -126,7 +128,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Collections.singletonList("https://habit.simmacococchiaro.com"));
+        // Splitta la stringa delle origini permesse
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
@@ -135,6 +138,5 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
-    
     
 }
