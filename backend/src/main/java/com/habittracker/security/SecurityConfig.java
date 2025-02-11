@@ -25,6 +25,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.habittracker.model.User;
 import com.habittracker.service.UserService;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 
 @Configuration
@@ -78,30 +80,36 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> {
                 auth.requestMatchers("/api/public/**", "/login/**", "/oauth2/**", "/api/auth/**").permitAll()
                     .anyRequest().authenticated();
+                log.info("Configured authorization rules");
             })
             .oauth2Login(oauth2 -> {
                 oauth2.successHandler((request, response, authentication) -> {
                     OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-                    String sessionId = request.getSession(true).getId();
+                    HttpSession session = request.getSession(true);
+                    String sessionId = session.getId();
                     
                     log.info("OAuth2 login successful for user: {} with session ID: {}", 
                             oauth2User.getAttribute("email"), sessionId);
 
-                    // Configurazione corretta del cookie
-                    String cookieValue = String.format("%s=%s", "JSESSIONID", sessionId);
-                    response.setHeader("Set-Cookie", cookieValue + 
-                        "; Path=/; Secure; HttpOnly; SameSite=None; Domain=casacocchy.duckdns.org");
-
+                    Cookie sessionCookie = new Cookie("JSESSIONID", sessionId);
+                    sessionCookie.setPath("/");
+                    sessionCookie.setHttpOnly(true);
+                    sessionCookie.setSecure(true);
+                    response.addCookie(sessionCookie);
+                    
+                    // CORS headers
                     response.setHeader("Access-Control-Allow-Origin", frontendUrl);
                     response.setHeader("Access-Control-Allow-Credentials", "true");
+                    response.setHeader("Set-Cookie", "SameSite=None");
                     
-                    log.info("Cookie set with value: {}", cookieValue);
+                    log.info("Redirecting to frontend: {}", frontendUrl);
                     response.sendRedirect(frontendUrl);
                 });
             });
 
         return http.build();
     }
+    
 
     @Bean
     public OAuth2UserService<OAuth2UserRequest, OAuth2User> oauth2UserService() {
@@ -125,7 +133,8 @@ public class SecurityConfig {
             "Set-Cookie"
         ));
         configuration.setAllowCredentials(true);
-        
+        configuration.setMaxAge(3600L);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
