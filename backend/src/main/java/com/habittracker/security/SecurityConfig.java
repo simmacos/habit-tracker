@@ -79,13 +79,10 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                .maximumSessions(1)
-                .expiredUrl(frontendUrl + "?expired=true"))
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(auth -> {
                 auth.requestMatchers("/api/public/**", "/login/**", "/oauth2/**", "/api/auth/**").permitAll()
                     .anyRequest().authenticated();
-                log.info("Configured authorization rules");
             })
             .oauth2Login(oauth2 -> {
                 oauth2.successHandler((request, response, authentication) -> {
@@ -94,33 +91,16 @@ public class SecurityConfig {
                     String sessionId = request.getSession(true).getId();
                     log.info("OAuth2 login successful for user: {} with session ID: {}", email, sessionId);
                     
-                    // Log dei cookie esistenti
-                    Cookie[] cookies = request.getCookies();
-                    if (cookies != null) {
-                        for (Cookie cookie : cookies) {
-                            log.info("Existing cookie: {} = {}", cookie.getName(), cookie.getValue());
-                        }
-                    }
-                
-                    // Imposta cookie di sessione
-                    Cookie sessionCookie = new Cookie("JSESSIONID", sessionId);
-                    sessionCookie.setPath("/");
-                    sessionCookie.setSecure(true);
-                    sessionCookie.setHttpOnly(true);
-                    sessionCookie.setDomain("haby.casacocchy.duckdns.org");  // Importante!
-                    response.addCookie(sessionCookie);
-                    
-                    // Aggiungi header SameSite direttamente
-                    response.setHeader("Set-Cookie", String.format("JSESSIONID=%s; Path=/; Secure; HttpOnly; SameSite=None", sessionId));
-                    
-                    log.info("Set session cookie: {}", sessionId);
+                    // Imposta il cookie JSESSIONID con attributi corretti per cross-origin
+                    String cookieValue = String.format("JSESSIONID=%s; Path=/; Secure; HttpOnly; SameSite=None; Domain=.casacocchy.duckdns.org", sessionId);
+                    response.setHeader("Set-Cookie", cookieValue);
                     
                     response.setHeader("Access-Control-Allow-Origin", frontendUrl);
                     response.setHeader("Access-Control-Allow-Credentials", "true");
                     
-                    log.info("Redirecting to frontend: {}", frontendUrl);
+                    log.info("Set cookie header: {}", cookieValue);
                     response.sendRedirect(frontendUrl);
-                });                
+                });
             });
 
         return http.build();
@@ -150,10 +130,8 @@ public class SecurityConfig {
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
-        log.info("Configured CORS with allowed origin: {}", frontendUrl);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
+        return new UrlBasedCorsConfigurationSource() {{
+            registerCorsConfiguration("/**", configuration);
+        }};
     }
 }
