@@ -25,8 +25,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.habittracker.model.User;
 import com.habittracker.service.UserService;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 
 @Configuration
@@ -80,27 +78,16 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> {
                 auth.requestMatchers("/api/public/**", "/login/**", "/oauth2/**", "/api/auth/**").permitAll()
                     .anyRequest().authenticated();
-                log.info("Configured authorization rules");
             })
             .oauth2Login(oauth2 -> {
                 oauth2.successHandler((request, response, authentication) -> {
                     OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-                    HttpSession session = request.getSession(true);
-                    String sessionId = session.getId();
+                    String email = oauth2User.getAttribute("email");
+                    log.info("OAuth2 login successful for user: {}", email);
                     
-                    log.info("OAuth2 login successful for user: {} with session ID: {}", 
-                            oauth2User.getAttribute("email"), sessionId);
-
-                    Cookie sessionCookie = new Cookie("JSESSIONID", sessionId);
-                    sessionCookie.setPath("/");
-                    sessionCookie.setHttpOnly(true);
-                    sessionCookie.setSecure(true);
-                    response.addCookie(sessionCookie);
-                    
-                    // CORS headers
+                    // Manteniamo la configurazione base dei cookie che funzionava
                     response.setHeader("Access-Control-Allow-Origin", frontendUrl);
                     response.setHeader("Access-Control-Allow-Credentials", "true");
-                    response.setHeader("Set-Cookie", "SameSite=None");
                     
                     log.info("Redirecting to frontend: {}", frontendUrl);
                     response.sendRedirect(frontendUrl);
@@ -127,13 +114,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Collections.singletonList(frontendUrl));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setExposedHeaders(Arrays.asList(
-            "Access-Control-Allow-Origin",
-            "Access-Control-Allow-Credentials",
-            "Set-Cookie"
-        ));
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
