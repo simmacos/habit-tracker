@@ -91,22 +91,36 @@ public class SecurityConfig {
                 oauth2.successHandler((request, response, authentication) -> {
                     OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
                     String email = oauth2User.getAttribute("email");
-                    log.info("OAuth2 login successful for user: {}", email);
+                    String sessionId = request.getSession(true).getId();
+                    log.info("OAuth2 login successful for user: {} with session ID: {}", email, sessionId);
                     
-                    // Imposta cookie SameSite e Secure
-                    Cookie sessionCookie = new Cookie("JSESSIONID", request.getSession(true).getId());
+                    // Log dei cookie esistenti
+                    Cookie[] cookies = request.getCookies();
+                    if (cookies != null) {
+                        for (Cookie cookie : cookies) {
+                            log.info("Existing cookie: {} = {}", cookie.getName(), cookie.getValue());
+                        }
+                    }
+                
+                    // Imposta cookie di sessione
+                    Cookie sessionCookie = new Cookie("JSESSIONID", sessionId);
                     sessionCookie.setPath("/");
                     sessionCookie.setSecure(true);
-                    sessionCookie.setAttribute("SameSite", "None");
-                    sessionCookie.setMaxAge(-1);
+                    sessionCookie.setHttpOnly(true);
+                    sessionCookie.setDomain("haby.casacocchy.duckdns.org");  // Importante!
                     response.addCookie(sessionCookie);
+                    
+                    // Aggiungi header SameSite direttamente
+                    response.setHeader("Set-Cookie", String.format("JSESSIONID=%s; Path=/; Secure; HttpOnly; SameSite=None", sessionId));
+                    
+                    log.info("Set session cookie: {}", sessionId);
                     
                     response.setHeader("Access-Control-Allow-Origin", frontendUrl);
                     response.setHeader("Access-Control-Allow-Credentials", "true");
                     
                     log.info("Redirecting to frontend: {}", frontendUrl);
                     response.sendRedirect(frontendUrl);
-                });
+                });                
             });
 
         return http.build();

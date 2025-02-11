@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -28,30 +29,57 @@ public class AuthController {
     private String frontendUrl;
 
     @GetMapping("/user")
-    public ResponseEntity<?> getUser() {
+    public ResponseEntity<?> getUser(HttpServletRequest request, HttpServletResponse response) {
         try {
+            // Log della sessione e dei cookie
+            HttpSession session = request.getSession(false);
+            logger.info("Session ID: {}", session != null ? session.getId() : "no session");
+            
+            Cookie[] cookies = request.getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    logger.info("Received cookie: {} = {}", cookie.getName(), cookie.getValue());
+                }
+            } else {
+                logger.warn("No cookies present in request");
+            }
+    
+            // Log degli headers
+            Collections.list(request.getHeaderNames()).forEach(headerName -> 
+                logger.info("Header {}: {}", headerName, request.getHeader(headerName))
+            );
+    
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
+            logger.info("Authentication present: {}, type: {}", 
+                auth != null, 
+                auth != null ? auth.getClass().getSimpleName() : "null");
+    
             if (auth != null && auth.getPrincipal() instanceof OAuth2User) {
                 OAuth2User oauth2User = (OAuth2User) auth.getPrincipal();
+                String email = oauth2User.getAttribute("email");
+                logger.info("OAuth2User found with email: {}", email);
+    
                 Map<String, Object> userDetails = new HashMap<>();
                 userDetails.put("name", oauth2User.getAttribute("name"));
                 userDetails.put("picture", oauth2User.getAttribute("picture"));
-                userDetails.put("email", oauth2User.getAttribute("email"));
+                userDetails.put("email", email);
                 userDetails.put("authenticated", true);
-
-                logger.debug("User details retrieved successfully for: {}", Optional.ofNullable(oauth2User.getAttribute("email")));
+    
+                // Assicuriamoci che gli header CORS siano presenti
+                response.setHeader("Access-Control-Allow-Origin", "https://habit.simmacococchiaro.com");
+                response.setHeader("Access-Control-Allow-Credentials", "true");
+    
                 return ResponseEntity.ok(userDetails);
             }
-
-            logger.debug("No authenticated user found");
+    
+            logger.warn("No authenticated user found in SecurityContext");
             return ResponseEntity.ok(Map.of("authenticated", false));
         } catch (Exception e) {
             logger.error("Error getting user details", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error retrieving user details"));
         }
-    }
+    }    
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
