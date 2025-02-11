@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -26,8 +25,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.habittracker.model.User;
 import com.habittracker.service.UserService;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
 @Configuration
@@ -78,8 +75,6 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(auth -> {
                 auth.requestMatchers("/api/public/**", "/login/**", "/oauth2/**", "/api/auth/**").permitAll()
                     .anyRequest().authenticated();
@@ -87,18 +82,20 @@ public class SecurityConfig {
             .oauth2Login(oauth2 -> {
                 oauth2.successHandler((request, response, authentication) -> {
                     OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-                    String email = oauth2User.getAttribute("email");
                     String sessionId = request.getSession(true).getId();
-                    log.info("OAuth2 login successful for user: {} with session ID: {}", email, sessionId);
                     
-                    // Imposta il cookie JSESSIONID con attributi corretti per cross-origin
-                    String cookieValue = String.format("JSESSIONID=%s; Path=/; Secure; HttpOnly; SameSite=None; Domain=.casacocchy.duckdns.org", sessionId);
-                    response.setHeader("Set-Cookie", cookieValue);
-                    
+                    log.info("OAuth2 login successful for user: {} with session ID: {}", 
+                            oauth2User.getAttribute("email"), sessionId);
+
+                    // Configurazione corretta del cookie
+                    String cookieValue = String.format("%s=%s", "JSESSIONID", sessionId);
+                    response.setHeader("Set-Cookie", cookieValue + 
+                        "; Path=/; Secure; HttpOnly; SameSite=None; Domain=casacocchy.duckdns.org");
+
                     response.setHeader("Access-Control-Allow-Origin", frontendUrl);
                     response.setHeader("Access-Control-Allow-Credentials", "true");
                     
-                    log.info("Set cookie header: {}", cookieValue);
+                    log.info("Cookie set with value: {}", cookieValue);
                     response.sendRedirect(frontendUrl);
                 });
             });
@@ -128,10 +125,9 @@ public class SecurityConfig {
             "Set-Cookie"
         ));
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
-
-        return new UrlBasedCorsConfigurationSource() {{
-            registerCorsConfiguration("/**", configuration);
-        }};
+        
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }
