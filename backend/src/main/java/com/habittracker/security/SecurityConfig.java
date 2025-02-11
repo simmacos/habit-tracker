@@ -25,8 +25,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.habittracker.model.User;
 import com.habittracker.service.UserService;
 
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+
 @Configuration
 @EnableWebSecurity
+@Slf4j
 public class SecurityConfig {
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
@@ -66,22 +70,45 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        log.info("Configuring security with frontend URL: {}", frontendUrl);
+        
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login/**", "/oauth2/**", "/api/public/**").permitAll()
-                .anyRequest().authenticated()
-            )
+            .authorizeHttpRequests(auth -> {
+                auth.requestMatchers("/api/public/**", "/login/**", "/oauth2/**").permitAll()
+                    .anyRequest().authenticated();
+                log.info("Configured authorization rules");
+            })
             .oauth2Login(oauth2 -> {
                 oauth2.successHandler((request, response, authentication) -> {
-                    // Log per debug
-                    logger.info("Authentication successful, redirecting to: {}", frontendUrl);
+                    OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+                    String email = oauth2User.getAttribute("email");
+                    log.info("OAuth2 login successful for user: {}", email);
+                    
+                    // Aggiungi headers CORS essenziali
                     response.setHeader("Access-Control-Allow-Origin", frontendUrl);
                     response.setHeader("Access-Control-Allow-Credentials", "true");
+                    
+                    log.info("Redirecting to frontend: {}", frontendUrl);
                     response.sendRedirect(frontendUrl);
                 });
-            });
+                
+                oauth2.failureHandler((request, response, exception) -> {
+                    log.error("OAuth2 login failed: {}", exception.getMessage());
+                    response.sendRedirect(frontendUrl + "?error=auth_failed");
+                });
+            })
+            .exceptionHandling(exc -> exc
+                .authenticationEntryPoint((request, response, authException) -> {
+                    log.warn("Authentication failed: {} for request: {}", 
+                            authException.getMessage(), request.getRequestURI());
+                    
+                    response.setHeader("Access-Control-Allow-Origin", frontendUrl);
+                    response.setHeader("Access-Control-Allow-Credentials", "true");
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                })
+            );
 
         return http.build();
     }
@@ -101,9 +128,23 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Collections.singletonList(frontendUrl));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(Arrays.asList(
+            "Authorization", 
+            "Content-Type", 
+            "X-Requested-With", 
+            "Accept", 
+            "Origin", 
+            "Access-Control-Request-Method", 
+            "Access-Control-Request-Headers"
+        ));
+        configuration.setExposedHeaders(Arrays.asList(
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Credentials"
+        ));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
+
+        log.info("Configured CORS with allowed origin: {}", frontendUrl);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
