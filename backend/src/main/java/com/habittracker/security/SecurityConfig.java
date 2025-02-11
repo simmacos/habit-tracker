@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -25,6 +26,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.habittracker.model.User;
 import com.habittracker.service.UserService;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
@@ -68,6 +70,7 @@ public class SecurityConfig {
     }
 
 
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         log.info("Configuring security with frontend URL: {}", frontendUrl);
@@ -75,6 +78,10 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                .maximumSessions(1)
+                .expiredUrl(frontendUrl + "?expired=true"))
             .authorizeHttpRequests(auth -> {
                 auth.requestMatchers("/api/public/**", "/login/**", "/oauth2/**", "/api/auth/**").permitAll()
                     .anyRequest().authenticated();
@@ -86,7 +93,14 @@ public class SecurityConfig {
                     String email = oauth2User.getAttribute("email");
                     log.info("OAuth2 login successful for user: {}", email);
                     
-                    // CORS headers
+                    // Imposta cookie SameSite e Secure
+                    Cookie sessionCookie = new Cookie("JSESSIONID", request.getSession(true).getId());
+                    sessionCookie.setPath("/");
+                    sessionCookie.setSecure(true);
+                    sessionCookie.setAttribute("SameSite", "None");
+                    sessionCookie.setMaxAge(-1);
+                    response.addCookie(sessionCookie);
+                    
                     response.setHeader("Access-Control-Allow-Origin", frontendUrl);
                     response.setHeader("Access-Control-Allow-Credentials", "true");
                     
@@ -116,7 +130,8 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setExposedHeaders(Arrays.asList(
             "Access-Control-Allow-Origin",
-            "Access-Control-Allow-Credentials"
+            "Access-Control-Allow-Credentials",
+            "Set-Cookie"
         ));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
