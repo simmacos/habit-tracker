@@ -76,7 +76,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> {
-                auth.requestMatchers("/api/public/**", "/login/**", "/oauth2/**").permitAll()
+                auth.requestMatchers("/api/public/**", "/login/**", "/oauth2/**", "/api/auth/**").permitAll()
                     .anyRequest().authenticated();
                 log.info("Configured authorization rules");
             })
@@ -86,29 +86,14 @@ public class SecurityConfig {
                     String email = oauth2User.getAttribute("email");
                     log.info("OAuth2 login successful for user: {}", email);
                     
-                    // Aggiungi headers CORS essenziali
+                    // CORS headers
                     response.setHeader("Access-Control-Allow-Origin", frontendUrl);
                     response.setHeader("Access-Control-Allow-Credentials", "true");
                     
                     log.info("Redirecting to frontend: {}", frontendUrl);
                     response.sendRedirect(frontendUrl);
                 });
-                
-                oauth2.failureHandler((request, response, exception) -> {
-                    log.error("OAuth2 login failed: {}", exception.getMessage());
-                    response.sendRedirect(frontendUrl + "?error=auth_failed");
-                });
-            })
-            .exceptionHandling(exc -> exc
-                .authenticationEntryPoint((request, response, authException) -> {
-                    log.warn("Authentication failed: {} for request: {}", 
-                            authException.getMessage(), request.getRequestURI());
-                    
-                    response.setHeader("Access-Control-Allow-Origin", frontendUrl);
-                    response.setHeader("Access-Control-Allow-Credentials", "true");
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-                })
-            );
+            });
 
         return http.build();
     }
@@ -128,15 +113,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Collections.singletonList(frontendUrl));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList(
-            "Authorization", 
-            "Content-Type", 
-            "X-Requested-With", 
-            "Accept", 
-            "Origin", 
-            "Access-Control-Request-Method", 
-            "Access-Control-Request-Headers"
-        ));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setExposedHeaders(Arrays.asList(
             "Access-Control-Allow-Origin",
             "Access-Control-Allow-Credentials"
