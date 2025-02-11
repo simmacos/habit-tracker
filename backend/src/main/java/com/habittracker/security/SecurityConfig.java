@@ -25,11 +25,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.habittracker.model.User;
 import com.habittracker.service.UserService;
 
-import lombok.extern.slf4j.Slf4j;
-
 @Configuration
 @EnableWebSecurity
-@Slf4j
 public class SecurityConfig {
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
@@ -38,7 +35,6 @@ public class SecurityConfig {
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
-
 
     @Bean
     public UserDetailsService userDetailsService() {
@@ -66,37 +62,56 @@ public class SecurityConfig {
         };
     }
 
-
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        log.info("Configuring security with frontend URL: {}", frontendUrl);
-        
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> {
-                auth.requestMatchers("/api/public/**", "/login/**", "/oauth2/**", "/api/auth/**").permitAll()
-                    .anyRequest().authenticated();
-            })
-            .oauth2Login(oauth2 -> {
-                oauth2.successHandler((request, response, authentication) -> {
-                    OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-                    String email = oauth2User.getAttribute("email");
-                    log.info("OAuth2 login successful for user: {}", email);
-                    
-                    // Manteniamo la configurazione base dei cookie che funzionava
-                    response.setHeader("Access-Control-Allow-Origin", frontendUrl);
-                    response.setHeader("Access-Control-Allow-Credentials", "true");
-                    
-                    log.info("Redirecting to frontend: {}", frontendUrl);
-                    response.sendRedirect(frontendUrl);
-                });
-            });
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/public/**", "/error", "/login/**", "/oauth2/**").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .oauth2Login(oauth2 -> {
+                    oauth2.userInfoEndpoint(userInfo ->
+                            userInfo.userService(oauth2UserService())
+                    );
+                    oauth2.successHandler((request, response, authentication) -> {
+                        OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+                        try {
+                            String googleId = oauth2User.getAttribute("sub");
+                            String email = oauth2User.getAttribute("email");
+                            String name = oauth2User.getAttribute("name");
+                            String pictureUrl = oauth2User.getAttribute("picture");
+
+                            User savedUser = userService.findOrCreateUser(googleId, email, name, pictureUrl);
+                            logger.info("User authenticated successfully: {}", savedUser.getEmail());
+
+                            response.sendRedirect(frontendUrl);
+                        } catch (Exception e) {
+                            logger.error("Authentication error: {}", e.getMessage());
+                            response.sendRedirect(frontendUrl + "?error=auth_failed");
+                        }
+                    });
+                })
+                .rememberMe(remember -> remember
+                        .userDetailsService(userDetailsService())
+                        .key("uniqueAndSecureKey")
+                        .tokenValiditySeconds(86400)
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/logout")
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            logger.info("Logout successful, redirecting to: {}", frontendUrl);
+                            response.sendRedirect(frontendUrl);
+                        })
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID", "remember-me")
+                        .invalidateHttpSession(true)
+                );
+
 
         return http.build();
     }
-    
 
     @Bean
     public OAuth2UserService<OAuth2UserRequest, OAuth2User> oauth2UserService() {
@@ -111,7 +126,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Collections.singletonList(frontendUrl));
+        configuration.setAllowedOrigins(Collections.singletonList("https://habit.simmacococchiaro.com"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
