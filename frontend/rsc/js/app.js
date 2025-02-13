@@ -7,7 +7,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const profileDropdown = document.querySelector(".profile-dropdown");
   const logoutBtn = document.getElementById("logoutBtn");
 
-  // Nuovi elementi per habits
   const addHabitBtn = document.getElementById("addHabitBtn");
   const modal = document.getElementById("addHabitModal");
   const closeModalBtn = document.getElementById("closeModal");
@@ -19,6 +18,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const hobbiesList = document.getElementById("hobbiesList");
   const hobbiesSection = document.getElementById("hobbiesSection");
   const introSection = document.getElementById("introSection");
+  const mainContent = document.getElementById("mainContent"); 
 
   const isMobile = window.innerWidth <= 600;
   const API_BASE_URL = "https://haby.casacocchy.duckdns.org";
@@ -87,12 +87,14 @@ document.addEventListener("DOMContentLoaded", function () {
         } else {
           showLoginButton();
           introSection.classList.remove("hidden"); // Mostra la schermata introduttiva
+          mainContent.classList.add("hidden"); // Nascondi il 
         }
       })
       .catch((err) => {
         console.error("Error checking auth:", err);
         showLoginButton();
         introSection.classList.remove("hidden"); // Mostra la schermata introduttiva in caso di errore
+        mainContent.classList.add("hidden"); // Nascondi il contenuto della web app
       });
   }
 
@@ -100,12 +102,14 @@ document.addEventListener("DOMContentLoaded", function () {
     loginBtn.classList.remove("hidden");
     userProfile.classList.add("hidden");
     introSection.classList.remove("hidden");
+    mainContent.classList.add("hidden");
   }
 
   function showUserProfile(user) {
     loginBtn.classList.add("hidden");
     userProfile.classList.remove("hidden");
     introSection.classList.add("hidden"); 
+    mainContent.classList.remove("hidden"); 
 
     if (user.picture) {
       const img = new Image();
