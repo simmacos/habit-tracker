@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const habitsList = document.getElementById("habitsList");
   const hobbiesList = document.getElementById("hobbiesList");
   const hobbiesSection = document.getElementById("hobbiesSection");
+  const introSection = document.getElementById("introSection");
 
   const isMobile = window.innerWidth <= 600;
   const API_BASE_URL = "https://haby.casacocchy.duckdns.org";
@@ -72,7 +73,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function checkLoginStatus() {
     fetch(`${API_BASE_URL}/api/auth/user`, {
-      credentials: "include", // Rimuovi tutti gli headers
+      credentials: "include", // Rimuove gli headers manuali
     })
       .then((res) => {
         if (!res.ok) throw new Error("Not authenticated");
@@ -81,25 +82,30 @@ document.addEventListener("DOMContentLoaded", function () {
       .then((data) => {
         if (data.name) {
           showUserProfile(data);
-          loadHabits();
+          introSection.classList.add("hidden"); // Nascondi la schermata introduttiva
+          loadHabits(); // Carica i dati
         } else {
           showLoginButton();
+          introSection.classList.remove("hidden"); // Mostra la schermata introduttiva
         }
       })
       .catch((err) => {
         console.error("Error checking auth:", err);
         showLoginButton();
+        introSection.classList.remove("hidden"); // Mostra la schermata introduttiva in caso di errore
       });
   }
 
   function showLoginButton() {
     loginBtn.classList.remove("hidden");
     userProfile.classList.add("hidden");
+    introSection.classList.remove("hidden");
   }
 
   function showUserProfile(user) {
     loginBtn.classList.add("hidden");
     userProfile.classList.remove("hidden");
+    introSection.classList.add("hidden"); 
 
     if (user.picture) {
       const img = new Image();

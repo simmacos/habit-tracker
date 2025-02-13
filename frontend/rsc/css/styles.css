@@ -620,3 +620,46 @@ input:checked + .toggle-slider:before {
     }
 }
 
+
+/* Schermata introduttiva */
+.intro {
+    text-align: center;
+    margin-top: 2rem;
+    padding: 1rem;
+    background-color: var(--sage);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.intro.hidden {
+    display: none;
+}
+.intro-title {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: var(--noir);
+}
+.intro-description {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    color: var(--noir);
+}
+.intro-screenshot {
+    max-width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    margin-bottom: 1.5rem;
+}
+.intro-link {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--moss);
+    color: var(--ivory);
+    font-weight: 500;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.3s ease-in-out;
+}
+.intro-link:hover {
+    background-color: #4a4f2f;
+    color: var(--ivory);
+}
