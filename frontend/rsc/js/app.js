@@ -301,6 +301,11 @@ document.addEventListener("DOMContentLoaded", function () {
     modal.classList.add("active");
     document.body.style.overflow = "hidden";
     resetModalForm();
+
+    // Select all days by default when opening the modal
+    weekDaysButtons.forEach((btn) => {
+      btn.classList.add("active");
+    });
   }
 
   function closeModal() {
@@ -314,7 +319,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("habitDesc").value = "";
     isHobbyToggle.checked = false;
     weekDaysButtons.forEach((btn) => {
-      btn.classList.remove("active");
+      btn.classList.add("active"); // Select all days by default
       btn.style.opacity = "1";
       btn.style.cursor = "pointer";
     });
@@ -336,9 +341,16 @@ document.addEventListener("DOMContentLoaded", function () {
     const isHobby = isHobbyToggle.checked;
     const schedule = isHobby ? "1111111" : getScheduleFromButtons();
 
+    // Validation: Check if a name is provided
     if (!name) {
-      alert("Please enter a habit name");
+      alert("Please enter a habit name.");
       return;
+    }
+
+    // Validation: Check if at least one day is selected
+    if (!isHobby && !schedule.includes("1")) {
+      alert("Please select at least one day.");
+      return; // Stop the save process if no days are selected
     }
 
     const habitData = {
@@ -348,6 +360,7 @@ document.addEventListener("DOMContentLoaded", function () {
       schedule: schedule,
     };
 
+    // API Call to save the habit
     fetch(`${API_BASE_URL}/api/habits`, {
       method: "POST",
       headers: {
