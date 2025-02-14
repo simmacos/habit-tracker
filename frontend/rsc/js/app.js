@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const hobbiesList = document.getElementById("hobbiesList");
   const hobbiesSection = document.getElementById("hobbiesSection");
   const introSection = document.getElementById("introSection");
-  const mainContent = document.getElementById("mainContent"); 
+  const mainContent = document.getElementById("mainContent");
 
   const isMobile = window.innerWidth <= 600;
   const API_BASE_URL = "https://haby.casacocchy.duckdns.org";
@@ -87,7 +87,7 @@ document.addEventListener("DOMContentLoaded", function () {
         } else {
           showLoginButton();
           introSection.classList.remove("hidden"); // Mostra la schermata introduttiva
-          mainContent.classList.add("hidden"); // Nascondi il 
+          mainContent.classList.add("hidden"); // Nascondi il
         }
       })
       .catch((err) => {
@@ -108,8 +108,8 @@ document.addEventListener("DOMContentLoaded", function () {
   function showUserProfile(user) {
     loginBtn.classList.add("hidden");
     userProfile.classList.remove("hidden");
-    introSection.classList.add("hidden"); 
-    mainContent.classList.remove("hidden"); 
+    introSection.classList.add("hidden");
+    mainContent.classList.remove("hidden");
 
     if (user.picture) {
       const img = new Image();
@@ -137,11 +137,11 @@ document.addEventListener("DOMContentLoaded", function () {
       .then((response) => response.json())
       .then((data) => {
         window.location.href =
-          data.redirectUrl || "https://haby.casacocchy.duckdns.org/index.html";
+          data.redirectUrl || "https://habit.casacocchy.duckdns.org";
       })
       .catch((error) => {
         console.error("Logout error:", error);
-        window.location.href = "https://haby.casacocchy.duckdns.org/index.html";
+        window.location.href = "https://habit.casacocchy.duckdns.org";
       });
   });
 

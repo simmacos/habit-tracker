@@ -1,188 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sprout Tracker</title>
-    <link rel="stylesheet" href="rsc/css/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="icon" href="rsc/images/favicon.ico" type="image/x-icon">
-</head>
-<body>
+    <link rel="stylesheet" href="rsc/css/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <link rel="icon" href="rsc/images/favicon.ico" type="image/x-icon" />
+  </head>
+  <body>
     <!-- Navbar esistente -->
     <nav class="navbar">
-        <div class="nav-brand">
-            <i class="fas fa-leaf"></i>
-            <span>Sprout Tracker</span>
-        </div>
-        <div class="nav-auth">
-            <button id="loginBtn" class="login-btn">
-                <i class="fab fa-google"></i>
-                Login with Google
-            </button>
-            <div id="userProfile" class="user-profile hidden">
-                <div class="profile-dropdown">
-                    <div class="profile-trigger">
-                        <img id="userImg" src="" alt="pic">
-                        <span id="userName"></span>
-                    </div>
-                    <div class="dropdown-menu">
-                        <button id="logoutBtn" class="dropdown-item">
-                            <i class="fas fa-sign-out-alt"></i>
-                            Logout
-                        </button>
-                    </div>
-                </div>
+      <div class="nav-brand">
+        <i class="fas fa-leaf"></i>
+        <span>Sprout Tracker</span>
+      </div>
+      <div class="nav-auth">
+        <button id="loginBtn" class="login-btn">
+          <i class="fab fa-google"></i>
+          Login with Google
+        </button>
+        <div id="userProfile" class="user-profile hidden">
+          <div class="profile-dropdown">
+            <div class="profile-trigger">
+              <img id="userImg" src="" alt="pic" />
+              <span id="userName"></span>
             </div>
+            <div class="dropdown-menu">
+              <button id="logoutBtn" class="dropdown-item">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
     </nav>
 
     <!-- Main Content -->
     <div class="container hidden" id="mainContent">
-        <!-- Habits Section -->
-        <div class="section">
-            <div class="section-header">
-                <h2 class="section-title">Habits</h2>
-                <button class="add-btn" id="addHabitBtn">+</button>
-            </div>
-            <div class="habit-list" id="habitsList">
-                <!-- Habits will be dynamically added here -->
-            </div>
+      <!-- Habits Section -->
+      <div class="section">
+        <div class="section-header">
+          <h2 class="section-title">Habits</h2>
+          <button class="add-btn" id="addHabitBtn">+</button>
         </div>
-    
-        <!-- Hobbies Section -->
-        <div class="section" id="hobbiesSection">
-            <div class="section-header">
-                <h2 class="section-title">Hobbies</h2>
-            </div>
-            <div class="habit-list" id="hobbiesList">
-                <!-- Hobbies will be dynamically added here -->
-            </div>
+        <div class="habit-list" id="habitsList">
+          <!-- Habits will be dynamically added here -->
         </div>
+      </div>
+
+      <!-- Hobbies Section -->
+      <div class="section" id="hobbiesSection">
+        <div class="section-header">
+          <h2 class="section-title">Hobbies</h2>
+        </div>
+        <div class="habit-list" id="hobbiesList">
+          <!-- Hobbies will be dynamically added here -->
+        </div>
+      </div>
     </div>
 
     <!-- Add Habit Modal -->
     <div class="modal" id="addHabitModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Add New Habit</h3>
-                <button class="close-btn" id="closeModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <!-- Habit Name Input -->
-                <div class="form-group">
-                    <label for="habitName">Habit Name</label>
-                    <input type="text" id="habitName" placeholder="Enter habit name">
-                </div>
-
-                <!-- Week Days Selection -->
-                <div class="form-group">
-                    <label>Repeat on</label>
-                    <div class="weekdays" id="weekDays">
-                        <button class="day-btn active" data-day="0">S</button>
-                        <button class="day-btn active" data-day="1">M</button>
-                        <button class="day-btn active" data-day="2">T</button>
-                        <button class="day-btn active" data-day="3">W</button>
-                        <button class="day-btn active" data-day="4">T</button>
-                        <button class="day-btn active" data-day="5">F</button>
-                        <button class="day-btn active" data-day="6">S</button>
-                    </div>
-                </div>
-
-                <!-- Description Input -->
-                <div class="form-group">
-                    <label for="habitDesc">Description (MD)</label>
-                    <textarea id="habitDesc" rows="4" placeholder="Write your description in markdown..."></textarea>
-                </div>
-
-                <!-- Hobby Toggle -->
-                <div class="form-group">
-                    <label class="toggle-label">
-                        <span>Is this a hobby?</span>
-                        <div class="toggle-wrapper">
-                            <input type="checkbox" id="isHobby">
-                            <span class="toggle-slider"></span>
-                        </div>
-                    </label>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="cancel-btn" id="cancelHabit">Cancel</button>
-                <button class="save-btn" id="saveHabit">Save Habit</button>
-            </div>
-        </div>
-    </div>
-
-<!-- Schermata introduttiva -->
-<div id="introSection" class="intro hidden">
-    <div class="intro-content">
-        <h2 class="intro-title">Log in to start!</h2>
-        <p class="intro-description">
-            Simple minimal habit tracker.
-        </p>
-        <img
-            src="rsc/images/habit-tracker-preview.png"
-            alt="Anteprima Habit Tracker"
-            class="intro-screenshot"
-        />
-        <a
-            href="https://github.com/tuo-repo/habit-tracker"
-            class="intro-link"
-            target="_blank"
-        >
-            <i class="fab fa-github"></i> Visita il Progetto su GitHub
-        </a>
-    </div>
-</div>
-
-    <!-- Habit Details Modal -->
-<div class="modal" id="habitDetailsModal">
-    <div class="modal-content">
+      <div class="modal-content">
         <div class="modal-header">
-            <h3 id="habitDetailTitle"></h3>
-            <button class="close-btn" id="closeDetailsModal">&times;</button>
+          <h3>Add New Habit</h3>
+          <button class="close-btn" id="closeModal">&times;</button>
         </div>
         <div class="modal-body">
-            <!-- View Mode -->
-            <div id="viewMode">
-                <div class="markdown-content" id="habitDescription"></div>
-            </div>
+          <!-- Habit Name Input -->
+          <div class="form-group">
+            <label for="habitName">Habit Name</label>
+            <input type="text" id="habitName" placeholder="Enter habit name" />
+          </div>
 
-            <!-- Edit Mode -->
-            <div id="editMode" class="hidden">
-                <!-- Week Days Selection -->
-                <div class="form-group">
-                    <label>Schedule</label>
-                    <div class="weekdays" id="editWeekDays">
-                        <button class="day-btn" data-day="0">S</button>
-                        <button class="day-btn" data-day="1">M</button>
-                        <button class="day-btn" data-day="2">T</button>
-                        <button class="day-btn" data-day="3">W</button>
-                        <button class="day-btn" data-day="4">T</button>
-                        <button class="day-btn" data-day="5">F</button>
-                        <button class="day-btn" data-day="6">S</button>
-                    </div>
-                </div>
-                
-                <!-- Description Input -->
-                <div class="form-group">
-                    <label for="editDescription">Description (MD)</label>
-                    <textarea id="editDescription" rows="6"></textarea>
-                </div>
+          <!-- Week Days Selection -->
+          <div class="form-group">
+            <label>Repeat on</label>
+            <div class="weekdays" id="weekDays">
+              <button class="day-btn active" data-day="0">S</button>
+              <button class="day-btn active" data-day="1">M</button>
+              <button class="day-btn active" data-day="2">T</button>
+              <button class="day-btn active" data-day="3">W</button>
+              <button class="day-btn active" data-day="4">T</button>
+              <button class="day-btn active" data-day="5">F</button>
+              <button class="day-btn active" data-day="6">S</button>
             </div>
+          </div>
+
+          <!-- Description Input -->
+          <div class="form-group">
+            <label for="habitDesc">Description (MD)</label>
+            <textarea
+              id="habitDesc"
+              rows="4"
+              placeholder="Write your description in markdown..."
+            ></textarea>
+          </div>
+
+          <!-- Hobby Toggle -->
+          <div class="form-group">
+            <label class="toggle-label">
+              <span>Is this a hobby?</span>
+              <div class="toggle-wrapper">
+                <input type="checkbox" id="isHobby" />
+                <span class="toggle-slider"></span>
+              </div>
+            </label>
+          </div>
         </div>
         <div class="modal-footer">
-            <div class="modal-actions">
-                <button class="btn-subtle" id="deleteHabitBtn">Delete</button>
-                <button class="btn-primary" id="editHabitBtn">Edit</button>
-                <button class="btn-primary hidden" id="saveEditBtn">Save Changes</button>
-            </div>
+          <button class="cancel-btn" id="cancelHabit">Cancel</button>
+          <button class="save-btn" id="saveHabit">Save Habit</button>
         </div>
+      </div>
     </div>
-</div>
 
+    <!-- Introductory Screen -->
+    <div id="introSection" class="intro hidden">
+      <div class="intro-content">
+        <h2 class="intro-title">Log in to get started!</h2>
+        <p class="intro-description">
+          A simple and minimal habit tracker to help you improve your daily
+          routines.
+        </p>
+        <img
+          src="rsc/images/habit-tracker-preview.png"
+          alt="Habit Tracker Preview"
+          class="intro-screenshot"
+        />
+        <a
+          href="https://github.com/simmacos/habit-tracker"
+          class="intro-link"
+          target="_blank"
+        >
+          <i class="fab fa-github"></i> Visit the Project on GitHub
+        </a>
+      </div>
+    </div>
+
+    <!-- Habit Details Modal -->
+    <div class="modal" id="habitDetailsModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="habitDetailTitle"></h3>
+          <button class="close-btn" id="closeDetailsModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <!-- View Mode -->
+          <div id="viewMode">
+            <div class="markdown-content" id="habitDescription"></div>
+          </div>
+
+          <!-- Edit Mode -->
+          <div id="editMode" class="hidden">
+            <!-- Week Days Selection -->
+            <div class="form-group">
+              <label>Schedule</label>
+              <div class="weekdays" id="editWeekDays">
+                <button class="day-btn" data-day="0">S</button>
+                <button class="day-btn" data-day="1">M</button>
+                <button class="day-btn" data-day="2">T</button>
+                <button class="day-btn" data-day="3">W</button>
+                <button class="day-btn" data-day="4">T</button>
+                <button class="day-btn" data-day="5">F</button>
+                <button class="day-btn" data-day="6">S</button>
+              </div>
+            </div>
+
+            <!-- Description Input -->
+            <div class="form-group">
+              <label for="editDescription">Description (MD)</label>
+              <textarea id="editDescription" rows="6"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <div class="modal-actions">
+            <button class="btn-subtle" id="deleteHabitBtn">Delete</button>
+            <button class="btn-primary" id="editHabitBtn">Edit</button>
+            <button class="btn-primary hidden" id="saveEditBtn">
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script src="rsc/js/app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-</body>
+  </body>
 </html>
