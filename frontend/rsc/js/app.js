@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const isMobile = window.innerWidth <= 600;
   const API_BASE_URL = "https://haby.casacocchy.duckdns.org";
+  let habitMap = {}; 
 
   // Check login status on page load
   checkLoginStatus();
@@ -171,66 +172,53 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function loadHabits() {
     fetch(`${API_BASE_URL}/api/habits?includeHobbies=true`, {
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
+        credentials: "include",
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+        },
     })
-      .then(handleResponse)
-      .then(async (habits) => {
-        console.log("Parsed habits:", habits);
+        .then(handleResponse)
+        .then(async (habits) => {
+            console.log("Parsed habits:", habits);
 
-        if (!Array.isArray(habits)) {
-          console.error("Expected array of habits, received:", habits);
-          return;
-        }
+            if (!Array.isArray(habits)) {
+                console.error("Expected array of habits, received:", habits);
+                return;
+            }
 
-        for (let habit of habits) {
-          try {
-            const response = await fetch(
-              `${API_BASE_URL}/api/habits/${habit.id}/completions/streak`,
-              {
-                // <-- Path corretto
-                credentials: "include",
-                headers: {
-                  Accept: "application/json",
-                },
-              }
-            );
-            const streakData = await response.json();
-            habit.streak = streakData.streak;
-          } catch (error) {
-            console.error(`Error loading streak for habit ${habit.id}:`, error);
-            habit.streak = 0;
-          }
-        }
+            // Clear and store habits in `habitMap`
+            habitMap = {};
+            habits.forEach((habit) => {
+                habitMap[habit.id] = habit; // Store each habit with its ID as the key
+            });
 
-        const regularHabits = habits.filter((h) => !h.isHobby);
-        const hobbies = habits.filter((h) => h.isHobby);
+            // Populate habits for display
+            const regularHabits = habits.filter((h) => !h.isHobby);
+            const hobbies = habits.filter((h) => h.isHobby);
 
-        // Render regular habits
-        habitsList.innerHTML =
-          regularHabits.length > 0
-            ? regularHabits.map((habit) => createHabitCard(habit)).join("")
-            : '<div class="no-habits">No habits added yet</div>';
+            // Render regular habits
+            habitsList.innerHTML =
+                regularHabits.length > 0
+                    ? regularHabits.map((habit) => createHabitCard(habit)).join("")
+                    : '<div class="no-habits">No habits added yet</div>';
 
-        // Only show hobbies section if there are hobbies
-        if (hobbies.length > 0) {
-          hobbiesSection.style.display = "block";
-          hobbiesList.innerHTML = hobbies
-            .map((habit) => createHabitCard(habit))
-            .join("");
-        } else {
-          hobbiesSection.style.display = "none";
-        }
+            // Only show hobbies section if there are hobbies
+            if (hobbies.length > 0) {
+                hobbiesSection.style.display = "block";
+                hobbiesList.innerHTML = hobbies
+                    .map((habit) => createHabitCard(habit))
+                    .join("");
+            } else {
+                hobbiesSection.style.display = "none";
+            }
 
-        addHabitCardListeners();
-      })
-      .catch((err) => {
-        console.error("Error loading habits:", err);
-        habitsList.innerHTML = '<div class="error">Error loading habits</div>';
-      });
+            addHabitCardListeners();
+        })
+        .catch((err) => {
+            console.error("Error loading habits:", err);
+            habitsList.innerHTML = '<div class="error">Error loading habits</div>';
+        });
   }
 
   function createHabitCard(habit) {
@@ -424,102 +412,114 @@ document.addEventListener("DOMContentLoaded", function () {
     const editBtn = document.getElementById("editHabitBtn");
     const saveEditBtn = document.getElementById("saveEditBtn");
 
-    fetch(`${API_BASE_URL}/api/habits/${habitId}`, {
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-    })
-      .then(handleResponse)
-      .then((habit) => {
-        document.getElementById("habitDetailTitle").textContent = habit.name;
-        const descriptionHtml = marked.parse(habit.description || "");
-        document.getElementById("habitDescription").innerHTML = descriptionHtml;
+    // Retrieve habit from preloaded habitMap
+    const habit = habitMap[habitId];
 
-        modal.classList.add("active");
-        document.body.style.overflow = "hidden";
+    if (!habit) {
+        console.error("Habit not found in habitMap:", habitId);
+        alert("Unable to fetch habit details.");
+        return;
+    }
 
-        modal.addEventListener("click", function (e) {
-          if (e.target === modal) {
+    // Populate modal with habit details
+    document.getElementById("habitDetailTitle").textContent = habit.name;
+    const descriptionHtml = marked.parse(habit.description || "");
+    document.getElementById("habitDescription").innerHTML = descriptionHtml;
+
+    // Show the modal
+    modal.classList.add("active");
+    document.body.style.overflow = "hidden";
+
+    modal.addEventListener("click", function (e) {
+        if (e.target === modal) {
             closeDetailsModal();
-          }
-        });
+        }
+    });
 
-        editBtn.onclick = () => {
-          viewMode.classList.add("hidden");
-          editMode.classList.remove("hidden");
-          editBtn.classList.add("hidden");
-          saveEditBtn.classList.remove("hidden");
+    // Edit functionality
+    editBtn.onclick = () => {
+        viewMode.classList.add("hidden");
+        editMode.classList.remove("hidden");
+        editBtn.classList.add("hidden");
+        saveEditBtn.classList.remove("hidden");
 
-          document.getElementById("editDescription").value = habit.description;
-          const weekDays = document.querySelectorAll("#editWeekDays .day-btn");
-          habit.schedule.split("").forEach((active, index) => {
+        document.getElementById("editDescription").value = habit.description;
+
+        // Update week days selection based on schedule
+        const weekDays = document.querySelectorAll("#editWeekDays .day-btn");
+        habit.schedule.split("").forEach((active, index) => {
             weekDays[index].classList.toggle("active", active === "1");
-          });
-        };
+        });
+    };
 
-        saveEditBtn.onclick = () => {
-          const updatedSchedule = Array.from(
+    // Save edited habit
+    saveEditBtn.onclick = () => {
+        const updatedSchedule = Array.from(
             document.querySelectorAll("#editWeekDays .day-btn")
-          )
+        )
             .map((btn) => (btn.classList.contains("active") ? "1" : "0"))
             .join("");
 
-          const updatedDescription =
+        const updatedDescription =
             document.getElementById("editDescription").value;
 
-          fetch(`${API_BASE_URL}/api/habits/${habitId}`, {
+        fetch(`${API_BASE_URL}/api/habits/${habitId}`, {
             method: "PUT",
             headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
+                "Content-Type": "application/json",
+                Accept: "application/json",
             },
             credentials: "include",
             body: JSON.stringify({
-              ...habit,
-              schedule: updatedSchedule,
-              description: updatedDescription,
+                ...habit,
+                schedule: updatedSchedule,
+                description: updatedDescription,
             }),
-          })
+        })
             .then(handleResponse)
             .then(() => {
-              loadHabits();
-              closeDetailsModal();
-            })
-            .catch(handleError);
-        };
-
-        document.getElementById("closeDetailsModal").onclick =
-          closeDetailsModal;
-
-        document.getElementById("deleteHabitBtn").onclick = () => {
-          if (confirm("Are you sure you want to delete this habit?")) {
-            fetch(`${API_BASE_URL}/api/habits/${habitId}`, {
-              method: "DELETE",
-              credentials: "include",
-              headers: {
-                Accept: "application/json",
-              },
-            })
-              .then(handleResponse)
-              .then(() => {
                 loadHabits();
                 closeDetailsModal();
-              })
-              .catch(handleError);
-          }
-        };
-      })
-      .catch(handleError);
+            })
+            .catch(handleError);
+    };
+
+    document.getElementById("closeDetailsModal").onclick = closeDetailsModal;
+
+    document.getElementById("deleteHabitBtn").onclick = () => {
+        if (confirm("Are you sure you want to delete this habit?")) {
+            fetch(`${API_BASE_URL}/api/habits/${habitId}`, {
+                method: "DELETE",
+                credentials: "include",
+                headers: {
+                    Accept: "application/json",
+                },
+            })
+                .then((response) => {
+                    if (response.ok) {
+                        console.log("Habit successfully deleted");
+                        loadHabits();
+                        closeDetailsModal();
+                    } else {
+                        throw new Error(
+                            `Failed to delete habit. Server returned status: ${response.status}`
+                        );
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error deleting habit:", error);
+                    alert("There was an error deleting the habit. Please try again.");
+                });
+        }
+    };
 
     function closeDetailsModal() {
-      modal.classList.remove("active");
-      document.body.style.overflow = "";
-      viewMode.classList.remove("hidden");
-      editMode.classList.add("hidden");
-      editBtn.classList.remove("hidden");
-      saveEditBtn.classList.add("hidden");
+        modal.classList.remove("active");
+        document.body.style.overflow = "";
+        viewMode.classList.remove("hidden");
+        editMode.classList.add("hidden");
+        editBtn.classList.remove("hidden");
+        saveEditBtn.classList.add("hidden");
     }
   }
 
