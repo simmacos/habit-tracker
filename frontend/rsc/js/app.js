@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const isMobile = window.innerWidth <= 600;
   const API_BASE_URL = "https://haby.casacocchy.duckdns.org";
   let habitMap = {}; 
+  let togglingHabits = new Set(); 
 
   // Check login status on page load
   checkLoginStatus();
@@ -149,11 +150,11 @@ document.addEventListener("DOMContentLoaded", function () {
   // Error handling functions
   function handleResponse(response) {
     if (!response.ok) {
-      throw new Error("Network response was not ok");
+        throw new Error(`HTTP error! Status: ${response.status}`);
     }
-    return response.json();
-  }
-
+    // Return JSON only if response is not empty (e.g., 204 No Content)
+    return response.status !== 204 ? response.json() : null;
+}
   function handleError(error) {
     console.error("Operation failed:", error);
     if (error.status === 401) {
@@ -170,7 +171,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-async function loadHabits() {
+  async function loadHabits() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/habits?includeHobbies=true`, {
             credentials: "include",
@@ -186,30 +187,26 @@ async function loadHabits() {
             return;
         }
 
-        // Clear habitMap and fetch streaks for each habit
+        // Clear and populate habitMap
         habitMap = {};
         for (const habit of habits) {
-            try {
-                const streakResponse = await fetch(
-                    `${API_BASE_URL}/api/habits/${habit.id}/completions/streak`,
-                    {
-                        credentials: "include",
-                        headers: {
-                            Accept: "application/json",
-                        },
-                    }
-                );
-                const streakData = await streakResponse.json();
-                habit.streak = streakData.streak || 0; // Cache streak in habit data
-            } catch (error) {
-                console.error(`Failed to fetch streak for habit ID ${habit.id}:`, error);
-                habit.streak = 0; // Default streak to 0 on error
-            }
+            // Fetch streak for each habit
+            const streakResponse = await fetch(
+                `${API_BASE_URL}/api/habits/${habit.id}/completions/streak`,
+                {
+                    credentials: "include",
+                    headers: {
+                        Accept: "application/json",
+                    },
+                }
+            );
+            const streakData = await streakResponse.json();
+            habit.streak = streakData.streak || 0; // Store streak in habit object
 
-            habitMap[habit.id] = habit; // Store habit in habitMap
+            habitMap[habit.id] = habit; // Cache complete habit data
         }
 
-        // Render habits and hobbies
+        // Render all habits and hobbies
         renderHabitSections(habits);
     } catch (error) {
         console.error("Error loading habits:", error);
@@ -402,54 +399,62 @@ function createHabitCard(habit) {
     });
   }
 
-  function toggleHabitCompletion(habitId) {
+  async function toggleHabitCompletion(habitId) {
+    if (togglingHabits.has(habitId)) return; // Avoid overlapping requests
+    togglingHabits.add(habitId); // Mark habit as being toggled
+
     const today = new Date().toISOString().split("T")[0];
 
-    fetch(`${API_BASE_URL}/api/habits/${habitId}/completions/toggle?date=${today}`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-        },
-    })
-        .then(handleResponse)
-        .then(() => {
-            // Update local habit data in habitMap
-            const habit = habitMap[habitId];
-            if (habit) {
-                const isCompleted = habit.completions?.some(
-                    (c) => c.id.completionDate === today
-                );
-
-                // Toggle today's completion
-                if (!isCompleted) {
-                    habit.completions.push({ id: { completionDate: today } });
-                    habit.streak = (habit.streak || 0) + 1; // Increment streak
-                } else {
-                    habit.completions = habit.completions.filter(
-                        (c) => c.id.completionDate !== today
-                    );
-                    habit.streak = Math.max((habit.streak || 0) - 1, 0); // Decrement streak
-                }
-
-                // Update habitMap
-                habitMap[habitId] = habit;
-
-                // Re-render the updated card
-                const card = document.querySelector(`.habit-card[data-id="${habitId}"]`);
-                if (card) {
-                    card.outerHTML = createHabitCard(habit); // Replace card with updated one
-                }
-
-                // Re-add listeners for the updated card
-                addHabitCardListeners();
+    try {
+        // Send toggle request to backend
+        const response = await fetch(
+            `${API_BASE_URL}/api/habits/${habitId}/completions/toggle?date=${today}`,
+            {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                },
             }
-        })
-        .catch((error) => {
-            console.error("Error toggling habit completion:", error);
-            alert("Unable to toggle habit. Please try again.");
-        });
+        );
+        await handleResponse(response);
+
+        // Update local habit data (habitMap) and UI
+        const habit = habitMap[habitId];
+        if (habit) {
+            const isCompleted = habit.completions?.some(
+                (c) => c.id.completionDate === today
+            );
+
+            // Toggle today's completion
+            if (!isCompleted) {
+                habit.completions.push({ id: { completionDate: today } });
+                habit.streak = (habit.streak || 0) + 1; // Increment streak
+            } else {
+                habit.completions = habit.completions.filter(
+                    (c) => c.id.completionDate !== today
+                );
+                habit.streak = Math.max((habit.streak || 0) - 1, 0); // Decrement streak
+            }
+
+            habitMap[habitId] = habit; // Update cache
+
+            // Re-render the updated habit card
+            const card = document.querySelector(`.habit-card[data-id="${habitId}"]`);
+            if (card) {
+                card.outerHTML = createHabitCard(habit); // Replace card with updated one
+            }
+
+            // Re-add listeners for toggled card
+            addHabitCardListeners();
+        }
+    } catch (error) {
+        console.error("Error toggling habit completion:", error);
+        alert("Unable to toggle habit. Please try again.");
+    } finally {
+        togglingHabits.delete(habitId); // Remove from toggling state
+    }
 }
 
   function showHabitDetails(habitId) {
