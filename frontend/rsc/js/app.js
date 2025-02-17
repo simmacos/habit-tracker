@@ -316,6 +316,31 @@ function createHabitCard(habit) {
     resetModalForm();
   }
 
+  function enableTabInTextareas(textarea) {
+    textarea.addEventListener("keydown", function (e) {
+        if (e.key === "Tab") { // Check if the Tab key is pressed
+            e.preventDefault(); // Prevent default tab behavior
+
+            const start = this.selectionStart; // Get the current cursor position
+            const end = this.selectionEnd; // Get the selection end position
+
+            // Insert 4 spaces at the cursor position
+            this.value =
+                this.value.substring(0, start) +
+                "    " + // 4 spaces
+                this.value.substring(end);
+
+            // Move the cursor to the correct position after the spaces
+            this.selectionStart = this.selectionEnd = start + 4;
+        }
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const descriptionBoxes = document.querySelectorAll("#habitDesc, #editDescription");
+    descriptionBoxes.forEach(enableTabInTextareas);
+  });
+
   function resetModalForm() {
     document.getElementById("habitName").value = "";
     document.getElementById("habitDesc").value = "";
