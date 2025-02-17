@@ -316,49 +316,7 @@ function createHabitCard(habit) {
     resetModalForm();
   }
 
-  function enableTabForTextareas() {
-    // Select all target textareas in the DOM
-    const textareas = document.querySelectorAll("#habitDesc, #editDescription");
 
-    textareas.forEach((textarea) => {
-        // Prevent attaching multiple listeners to the same textarea
-        if (textarea.dataset.tabListenerAdded === "true") return;
-
-        textarea.addEventListener("keydown", function (e) {
-            if (e.key === "Tab") { // Detect Tab key
-                e.preventDefault(); // Prevent default Tab behavior
-
-                const start = this.selectionStart; // Cursor start position
-                const end = this.selectionEnd; // Cursor end position
-
-                // Insert 4 spaces at the cursor position
-                this.value =
-                    this.value.substring(0, start) +
-                    "    " + // Add 4 spaces
-                    this.value.substring(end);
-
-                // Move cursor to after the 4 inserted spaces
-                this.selectionStart = this.selectionEnd = start + 4;
-            }
-        });
-
-        // Mark this textarea as having the Tab listener attached
-        textarea.dataset.tabListenerAdded = "true";
-    });
-}
-
-// Watch for when modals are actually opened
-document.addEventListener("DOMContentLoaded", function () {
-    // Attach listener when Create Habit modal opens
-    document.getElementById("addHabitBtn")?.addEventListener("click", function () {
-        setTimeout(enableTabForTextareas, 0); // Delay to ensure textareas are in the DOM
-    });
-
-    // Attach listener when Edit Habit modal opens
-    document.getElementById("editHabitBtn")?.addEventListener("click", function () {
-        setTimeout(enableTabForTextareas, 0); // Delay to ensure textareas are in the DOM
-    });
-});
 
   function resetModalForm() {
     document.getElementById("habitName").value = "";
