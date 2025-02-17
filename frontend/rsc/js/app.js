@@ -262,7 +262,7 @@ function createHabitCard(habit) {
             </div>
         </div>
     </div>
-`;
+  `;
 }
 
   function getScheduleDisplay(schedule) {
@@ -406,7 +406,7 @@ function createHabitCard(habit) {
     const today = new Date().toISOString().split("T")[0];
 
     try {
-        // Send toggle request to backend
+        // Send toggle request to the backend to mark/unmark today as completed
         const response = await fetch(
             `${API_BASE_URL}/api/habits/${habitId}/completions/toggle?date=${today}`,
             {
@@ -418,9 +418,26 @@ function createHabitCard(habit) {
                 },
             }
         );
-        await handleResponse(response);
 
-        // Update local habit data (habitMap) and UI
+        if (!response.ok) {
+            throw new Error(`Failed to toggle habit completion (status: ${response.status})`);
+        }
+
+        // Fetch updated streak from the backend
+        const streakResponse = await fetch(
+            `${API_BASE_URL}/api/habits/${habitId}/completions/streak`,
+            {
+                credentials: "include",
+                headers: {
+                    Accept: "application/json",
+                },
+            }
+        );
+
+        const streakData = await streakResponse.json();
+        const updatedStreak = streakData.streak || 0;
+
+        // Update local habit data in habitMap with the new streak value
         const habit = habitMap[habitId];
         if (habit) {
             const isCompleted = habit.completions?.some(
@@ -430,15 +447,14 @@ function createHabitCard(habit) {
             // Toggle today's completion
             if (!isCompleted) {
                 habit.completions.push({ id: { completionDate: today } });
-                habit.streak = (habit.streak || 0) + 1; // Increment streak
             } else {
                 habit.completions = habit.completions.filter(
                     (c) => c.id.completionDate !== today
                 );
-                habit.streak = Math.max((habit.streak || 0) - 1, 0); // Decrement streak
             }
 
-            habitMap[habitId] = habit; // Update cache
+            habit.streak = updatedStreak; // Use backend-calculated streak
+            habitMap[habitId] = habit; // Update the habit in the cache
 
             // Re-render the updated habit card
             const card = document.querySelector(`.habit-card[data-id="${habitId}"]`);
@@ -446,14 +462,14 @@ function createHabitCard(habit) {
                 card.outerHTML = createHabitCard(habit); // Replace card with updated one
             }
 
-            // Re-add listeners for toggled card
+            // Re-add listeners for the updated card
             addHabitCardListeners();
         }
     } catch (error) {
         console.error("Error toggling habit completion:", error);
         alert("Unable to toggle habit. Please try again.");
     } finally {
-        togglingHabits.delete(habitId); // Remove from toggling state
+        togglingHabits.delete(habitId); // Remove the habit from the toggle state
     }
 }
 
