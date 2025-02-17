@@ -170,86 +170,103 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function loadHabits() {
-    fetch(`${API_BASE_URL}/api/habits?includeHobbies=true`, {
-        credentials: "include",
-        headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-        },
-    })
-        .then(handleResponse)
-        .then(async (habits) => {
-            console.log("Parsed habits:", habits);
-
-            if (!Array.isArray(habits)) {
-                console.error("Expected array of habits, received:", habits);
-                return;
-            }
-
-            // Clear and store habits in `habitMap`
-            habitMap = {};
-            habits.forEach((habit) => {
-                habitMap[habit.id] = habit; // Store each habit with its ID as the key
-            });
-
-            // Populate habits for display
-            const regularHabits = habits.filter((h) => !h.isHobby);
-            const hobbies = habits.filter((h) => h.isHobby);
-
-            // Render regular habits
-            habitsList.innerHTML =
-                regularHabits.length > 0
-                    ? regularHabits.map((habit) => createHabitCard(habit)).join("")
-                    : '<div class="no-habits">No habits added yet</div>';
-
-            // Only show hobbies section if there are hobbies
-            if (hobbies.length > 0) {
-                hobbiesSection.style.display = "block";
-                hobbiesList.innerHTML = hobbies
-                    .map((habit) => createHabitCard(habit))
-                    .join("");
-            } else {
-                hobbiesSection.style.display = "none";
-            }
-
-            addHabitCardListeners();
-        })
-        .catch((err) => {
-            console.error("Error loading habits:", err);
-            habitsList.innerHTML = '<div class="error">Error loading habits</div>';
+async function loadHabits() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/habits?includeHobbies=true`, {
+            credentials: "include",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+            },
         });
-  }
+        const habits = await handleResponse(response);
 
-  function createHabitCard(habit) {
-    const isCompletedToday = habit.completions?.some((completion) => {
+        if (!Array.isArray(habits)) {
+            console.error("Expected array of habits, received:", habits);
+            return;
+        }
+
+        // Clear habitMap and fetch streaks for each habit
+        habitMap = {};
+        for (const habit of habits) {
+            try {
+                const streakResponse = await fetch(
+                    `${API_BASE_URL}/api/habits/${habit.id}/completions/streak`,
+                    {
+                        credentials: "include",
+                        headers: {
+                            Accept: "application/json",
+                        },
+                    }
+                );
+                const streakData = await streakResponse.json();
+                habit.streak = streakData.streak || 0; // Cache streak in habit data
+            } catch (error) {
+                console.error(`Failed to fetch streak for habit ID ${habit.id}:`, error);
+                habit.streak = 0; // Default streak to 0 on error
+            }
+
+            habitMap[habit.id] = habit; // Store habit in habitMap
+        }
+
+        // Render habits and hobbies
+        renderHabitSections(habits);
+    } catch (error) {
+        console.error("Error loading habits:", error);
+        habitsList.innerHTML = '<div class="error">Error loading habits</div>';
+    }
+}
+
+function renderHabitSections(habits) {
+    const regularHabits = habits.filter((h) => !h.isHobby);
+    const hobbies = habits.filter((h) => h.isHobby);
+
+    // Render regular habits
+    habitsList.innerHTML =
+        regularHabits.length > 0
+            ? regularHabits.map((habit) => createHabitCard(habit)).join("")
+            : '<div class="no-habits">No habits added yet</div>';
+
+    // Render hobbies section if needed
+    if (hobbies.length > 0) {
+        hobbiesSection.style.display = "block";
+        hobbiesList.innerHTML = hobbies.map((habit) => createHabitCard(habit)).join("");
+    } else {
+        hobbiesSection.style.display = "none";
+    }
+
+    addHabitCardListeners();
+}
+
+function createHabitCard(habit) {
+  const isCompletedToday = habit.completions?.some((completion) => {
       const completionDate = completion.id.completionDate;
       const today = new Date().toISOString().split("T")[0];
       return completionDate === today;
-    });
+  });
 
-    return `
-      <div class="habit-card" data-id="${habit.id}">
-          <input type="checkbox" class="habit-checkbox" ${
+  return `
+    <div class="habit-card" data-id="${habit.id}">
+        <input type="checkbox" class="habit-checkbox" ${
             isCompletedToday ? "checked" : ""
-          }>
-          <div class="habit-content">
-              <div class="habit-info">
-                  <div class="habit-title">${habit.name}</div>
-                  <div class="habit-meta">${
+        }>
+        <div class="habit-content">
+            <div class="habit-info">
+                <div class="habit-title">${habit.name}</div>
+                <div class="habit-meta">${
                     habit.isHobby
-                      ? "Flexible"
-                      : getScheduleDisplay(habit.schedule)
-                  }</div>
-              </div>
-              <div class="habit-streak">
-                  <i class="fas fa-fire"></i>
-                  <span>${habit.streak || 0} days</span>
-              </div>
-          </div>
-      </div>
-  `;
-  }
+                        ? "Flexible"
+                        : getScheduleDisplay(habit.schedule)
+                }</div>
+            </div>
+            <div class="habit-streak">
+                <i class="fas fa-fire"></i>
+                <span>${habit.streak || 0} days</span>
+            </div>
+        </div>
+    </div>
+`;
+}
 
   function getScheduleDisplay(schedule) {
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -387,23 +404,53 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function toggleHabitCompletion(habitId) {
     const today = new Date().toISOString().split("T")[0];
-    fetch(
-      `${API_BASE_URL}/api/habits/${habitId}/completions/toggle?date=${today}`,
-      {
+
+    fetch(`${API_BASE_URL}/api/habits/${habitId}/completions/toggle?date=${today}`, {
         method: "POST",
         credentials: "include",
         headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
+            Accept: "application/json",
+            "Content-Type": "application/json",
         },
-      }
-    )
-      .then(handleResponse)
-      .then((data) => {
-        loadHabits();
-      })
-      .catch(handleError);
-  }
+    })
+        .then(handleResponse)
+        .then(() => {
+            // Update local habit data in habitMap
+            const habit = habitMap[habitId];
+            if (habit) {
+                const isCompleted = habit.completions?.some(
+                    (c) => c.id.completionDate === today
+                );
+
+                // Toggle today's completion
+                if (!isCompleted) {
+                    habit.completions.push({ id: { completionDate: today } });
+                    habit.streak = (habit.streak || 0) + 1; // Increment streak
+                } else {
+                    habit.completions = habit.completions.filter(
+                        (c) => c.id.completionDate !== today
+                    );
+                    habit.streak = Math.max((habit.streak || 0) - 1, 0); // Decrement streak
+                }
+
+                // Update habitMap
+                habitMap[habitId] = habit;
+
+                // Re-render the updated card
+                const card = document.querySelector(`.habit-card[data-id="${habitId}"]`);
+                if (card) {
+                    card.outerHTML = createHabitCard(habit); // Replace card with updated one
+                }
+
+                // Re-add listeners for the updated card
+                addHabitCardListeners();
+            }
+        })
+        .catch((error) => {
+            console.error("Error toggling habit completion:", error);
+            alert("Unable to toggle habit. Please try again.");
+        });
+}
 
   function showHabitDetails(habitId) {
     const modal = document.getElementById("habitDetailsModal");
