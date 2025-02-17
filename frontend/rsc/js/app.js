@@ -343,43 +343,52 @@ function createHabitCard(habit) {
     const isHobby = isHobbyToggle.checked;
     const schedule = isHobby ? "1111111" : getScheduleFromButtons();
 
-    // Validation: Check if a name is provided
+    const saveButton = document.getElementById("saveHabit"); // Reference to the button
+
+    // Validation for the input fields
     if (!name) {
-      alert("Please enter a habit name.");
-      return;
+        alert("Please enter a habit name.");
+        return;
+    }
+    if (!isHobby && !schedule.includes("1")) {
+        alert("Please select at least one day.");
+        return;
     }
 
-    // Validation: Check if at least one day is selected
-    if (!isHobby && !schedule.includes("1")) {
-      alert("Please select at least one day.");
-      return; // Stop the save process if no days are selected
-    }
+    // Disable the button to prevent double-clicking
+    saveButton.disabled = true;
 
     const habitData = {
-      name: name,
-      description: description,
-      isHobby: isHobby,
-      schedule: schedule,
+        name: name,
+        description: description,
+        isHobby: isHobby,
+        schedule: schedule,
     };
 
-    // API Call to save the habit
     fetch(`${API_BASE_URL}/api/habits`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify(habitData),
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(habitData),
     })
-      .then(handleResponse)
-      .then((habit) => {
-        console.log("Habit saved:", habit);
-        closeModal();
-        loadHabits();
-      })
-      .catch(handleError);
-  }
+        .then(handleResponse)
+        .then((habit) => {
+            console.log("Habit saved:", habit);
+            closeModal(); // Close the modal after successfully creating the habit
+            loadHabits(); // Reload the habit list to reflect the new addition
+        })
+        .catch((error) => {
+            console.error("Error saving habit:", error);
+            alert("Failed to create habit. Please try again.");
+        })
+        .finally(() => {
+            // Re-enable the button after the request completes (success or failure)
+            saveButton.disabled = false;
+        });
+}
 
   function addHabitCardListeners() {
     document.querySelectorAll(".habit-checkbox").forEach((checkbox) => {
