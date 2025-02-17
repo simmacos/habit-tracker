@@ -316,41 +316,49 @@ function createHabitCard(habit) {
     resetModalForm();
   }
 
-// Function to enable Tab key indentation in textareas
-  function enableTabInTextareas(textarea) {
-    textarea.addEventListener("keydown", function (e) {
-        if (e.key === "Tab") { // Check if the Tab key is pressed
-            e.preventDefault(); // Prevent the default Tab behavior
+  function enableTabForTextareas() {
+    // Select all target textareas in the DOM
+    const textareas = document.querySelectorAll("#habitDesc, #editDescription");
 
-            const start = this.selectionStart; // Get current cursor position
-            const end = this.selectionEnd; // Get current selection end
+    textareas.forEach((textarea) => {
+        // Prevent attaching multiple listeners to the same textarea
+        if (textarea.dataset.tabListenerAdded === "true") return;
 
-            // Insert 4 spaces at the cursor position
-            this.value =
-                this.value.substring(0, start) +
-                "    " + // Insert 4 spaces
-                this.value.substring(end);
+        textarea.addEventListener("keydown", function (e) {
+            if (e.key === "Tab") { // Detect Tab key
+                e.preventDefault(); // Prevent default Tab behavior
 
-            // Move the cursor to the correct position after the spaces
-            this.selectionStart = this.selectionEnd = start + 4;
-        }
+                const start = this.selectionStart; // Cursor start position
+                const end = this.selectionEnd; // Cursor end position
+
+                // Insert 4 spaces at the cursor position
+                this.value =
+                    this.value.substring(0, start) +
+                    "    " + // Add 4 spaces
+                    this.value.substring(end);
+
+                // Move cursor to after the 4 inserted spaces
+                this.selectionStart = this.selectionEnd = start + 4;
+            }
+        });
+
+        // Mark this textarea as having the Tab listener attached
+        textarea.dataset.tabListenerAdded = "true";
     });
-  }
+}
 
-// Watch for modal openings and attach Tab functionality dynamically
-  document.addEventListener("DOMContentLoaded", function () {
-    // Attach event listeners when the Create Habit modal opens
+// Watch for when modals are actually opened
+document.addEventListener("DOMContentLoaded", function () {
+    // Attach listener when Create Habit modal opens
     document.getElementById("addHabitBtn")?.addEventListener("click", function () {
-        const habitDesc = document.getElementById("habitDesc");
-        if (habitDesc) enableTabInTextareas(habitDesc); // Enable Tab for create textarea
+        setTimeout(enableTabForTextareas, 0); // Delay to ensure textareas are in the DOM
     });
 
-    // Attach event listeners when the Edit Habit modal opens
+    // Attach listener when Edit Habit modal opens
     document.getElementById("editHabitBtn")?.addEventListener("click", function () {
-        const editDesc = document.getElementById("editDescription");
-        if (editDesc) enableTabInTextareas(editDesc); // Enable Tab for edit textarea
+        setTimeout(enableTabForTextareas, 0); // Delay to ensure textareas are in the DOM
     });
-  });
+});
 
   function resetModalForm() {
     document.getElementById("habitName").value = "";
